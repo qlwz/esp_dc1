@@ -1,0 +1,8 @@
+{
+    "name": "esp_framework",
+    "keywords": "esp framework",
+    "description": "esp framework",
+    "version": "1.0",
+    "frameworks": "arduino",
+    "platforms": "espressif8266"
+}

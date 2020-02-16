@@ -1,0 +1,26 @@
+
+syntax = "proto3";
+
+import "nanopb.proto";
+
+message DC1ConfigMessage {
+    uint32 last_state = 1 [(nanopb).int_size = IS_8];
+    uint32 power_on_state = 2 [(nanopb).int_size = IS_8];
+	uint32 power_mode = 3 [(nanopb).int_size = IS_8];
+    uint32 logo_led = 4 [(nanopb).int_size = IS_8];
+    uint32 wifi_led = 5 [(nanopb).int_size = IS_8];
+    uint32 sub_kinkage = 6 [(nanopb).int_size = IS_8];
+
+    uint32 report_interval = 20 [(nanopb).int_size = IS_16];
+    uint32 energy_power_delta = 21 [(nanopb).int_size = IS_16];
+    uint32 energy_power_calibration = 22 [(nanopb).int_size = IS_64];
+    uint32 energy_voltage_calibration = 23 [(nanopb).int_size = IS_64];
+    uint32 energy_current_calibration = 24 [(nanopb).int_size = IS_64];
+    
+    uint32 energy_kWhtoday = 25 [(nanopb).int_size = IS_64];
+    uint32 energy_kWhyesterday = 26 [(nanopb).int_size = IS_64];
+    uint32 energy_kWhtotal = 27 [(nanopb).int_size = IS_64];
+    uint32 energy_kWhdoy = 28 [(nanopb).int_size = IS_16];  
+    uint32 energy_kWhtotal_time = 29 [(nanopb).int_size = IS_32];
+
+}

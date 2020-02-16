@@ -1,0 +1,52 @@
+
+syntax = "proto3";
+
+import "nanopb.proto";
+
+message GlobalConfigMessage {
+    WifiConfigMessage wifi = 1;
+    HttpConfigMessage http = 2;
+    MqttConfigMessage mqtt = 3;
+    DebugConfigMessage debug = 4;
+	uint32 cfg_version = 5 [(nanopb).int_size = IS_16];
+	uint32 module_crc = 6 [(nanopb).int_size = IS_16];
+	bytes module_cfg = 7 [(nanopb).max_size = 500];
+    string uid = 8 [(nanopb).max_size = 20];
+}
+
+message WifiConfigMessage {
+    string ssid = 1 [(nanopb).max_size = 20];
+    string pass = 2 [(nanopb).max_size = 30];
+    
+	bool is_static = 3;
+	string ip = 4 [(nanopb).max_size = 15];
+	string sn = 5 [(nanopb).max_size = 15];
+	string gw = 6 [(nanopb).max_size = 15];
+
+	string ntp = 7 [(nanopb).max_size = 40];
+}
+
+message HttpConfigMessage {
+	uint32 port = 1 [(nanopb).int_size = IS_16];
+	string user = 2 [(nanopb).max_size = 15]; 
+	string pass = 3 [(nanopb).max_size = 15]; 
+	string ota_url = 4 [(nanopb).max_size = 150]; 
+}
+
+message MqttConfigMessage {
+	string server = 1 [(nanopb).max_size = 30];
+	uint32 port = 2 [(nanopb).int_size = IS_16];
+	string user = 3 [(nanopb).max_size = 20];
+	string pass = 4 [(nanopb).max_size = 30];
+	bool retain = 5;
+	string topic = 6 [(nanopb).max_size = 50];
+	bool discovery = 7;
+	string discovery_prefix = 8 [(nanopb).max_size = 30];
+    uint32 interval = 9 [(nanopb).int_size = IS_16];
+}
+
+message DebugConfigMessage {
+	uint32 type = 1 [(nanopb).int_size = IS_8];
+	string server = 2 [(nanopb).max_size = 40];
+	uint32 port = 3 [(nanopb).int_size = IS_16];
+}
