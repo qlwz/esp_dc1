@@ -37,6 +37,8 @@
 
 烧录固件完成后,即可开始使用
 
+## 如何编译
+Visual Studio Code + PlatformIO ID 开发  [安装](https://www.jianshu.com/p/c36f8be8c87f)
 
 ## 已支持接入的开源智能家居平台
 以下排序随机，不分优劣。合适自己的就好。
