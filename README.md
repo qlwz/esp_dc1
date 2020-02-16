@@ -31,6 +31,13 @@
 - [x] 电压/电流/功率/视在功率/无功功率/功率因数/用电量统计(不做任何精度保证)
 
 
+## 拆机接线及烧录固件相关
+
+见[固件烧录](固件烧录.md)
+
+烧录固件完成后,即可开始使用
+
+
 ## 已支持接入的开源智能家居平台
 以下排序随机，不分优劣。合适自己的就好。
 
@@ -58,10 +65,10 @@ ioBroker相关接入问题可以加QQ群776817275咨询
 
 # 固件截图
 
-![image](https://github.com/qlwz/esp_dc1/blob/master/file/images/tab1.png)
-![image](https://github.com/qlwz/esp_dc1/blob/master/file/images/tab2.png)
-![image](https://github.com/qlwz/esp_dc1/blob/master/file/images/tab3.png)
-![image](https://github.com/qlwz/esp_dc1/blob/master/file/images/tab4.png)
+![image](file/images/tab1.png)
+![image](file/images/tab2.png)
+![image](file/images/tab3.png)
+![image](file/images/tab4.png)
 
 ## 致谢
 以下排名不分先后，为随机。
