@@ -31,7 +31,7 @@ bool Mqtt::mqttConnect()
     Debug::AddInfo(PSTR("client mqtt not connected, trying to connect to %s:%d Broker"), globalConfig.mqtt.server, globalConfig.mqtt.port);
     mqttClient.setServer(globalConfig.mqtt.server, globalConfig.mqtt.port);
 
-    if (mqttClient.connect(UID, globalConfig.mqtt.user, globalConfig.mqtt.pass, getTeleTopic(F("availability")).c_str(), 0, false, "offline"))
+    if (mqttClient.connect(UID, globalConfig.mqtt.user, globalConfig.mqtt.pass, getTeleTopic(F("availability")).c_str(), 0, true, "offline"))
     {
         Debug::AddInfo(PSTR("successful client mqtt connection"));
         if (connectedcallback != NULL)
@@ -58,7 +58,7 @@ void Mqtt::doReportHeartbeat()
 
 void Mqtt::availability()
 {
-    publish(getTeleTopic(F("availability")), "online", false);
+    publish(getTeleTopic(F("availability")), "online", true);
 }
 
 void Mqtt::perSecondDo()
@@ -99,7 +99,7 @@ void Mqtt::loop()
             {
                 doReportHeartbeat();
             }
-            if (perSecond % 309 == 0)
+            if (perSecond % 3609 == 0)
             {
                 availability();
             }
