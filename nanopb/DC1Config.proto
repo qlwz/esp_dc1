@@ -20,7 +20,7 @@ message DC1ConfigMessage {
     uint32 energy_kWhtoday = 25 [(nanopb).int_size = IS_64];
     uint32 energy_kWhyesterday = 26 [(nanopb).int_size = IS_64];
     uint32 energy_kWhtotal = 27 [(nanopb).int_size = IS_64];
-    uint32 energy_kWhdoy = 28 [(nanopb).int_size = IS_16];  
+    uint32 energy_kWhdoy = 28 [(nanopb).int_size = IS_16];
     uint32 energy_kWhtotal_time = 29 [(nanopb).int_size = IS_32];
 
 }

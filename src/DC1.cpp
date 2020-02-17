@@ -52,6 +52,7 @@ void DC1::init()
         }
     }
     energyInit();
+    powerTopic = Mqtt::getStatTopic(F("POWER"));
 }
 
 bool DC1::moduleLed()
@@ -158,7 +159,6 @@ void DC1::mqttCallback(String topicStr, String str)
 
 void DC1::mqttConnected()
 {
-    powerTopic = Mqtt::getStatTopic(F("POWER"));
     if (globalConfig.mqtt.discovery)
     {
         mqttDiscovery(true);

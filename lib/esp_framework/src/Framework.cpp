@@ -124,15 +124,15 @@ void Framework::setup()
     }
     else
     {
+        Mqtt::setClient(Wifi::wifiClient);
+        Mqtt::mqttSetConnectedCallback(connectedCallback);
+        Mqtt::mqttSetLoopCallback(callback);
         module->init();
         tickerPerSecond = new Ticker();
         tickerPerSecond->attach(1, tickerPerSecondDo);
         Http::begin();
         Wifi::connectWifi();
         Rtc::init();
-        Mqtt::setClient(Wifi::wifiClient);
-        Mqtt::mqttSetConnectedCallback(connectedCallback);
-        Mqtt::mqttSetLoopCallback(callback);
     }
 }
 
