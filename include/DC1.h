@@ -43,18 +43,12 @@ const char HASS_DISCOVER_DC1_SENSOR[] PROGMEM =
     "{\"name\":\"%s_%s\","
     "\"stat_t\":\"%s\","
     "\"val_tpl\":\"{{value_json.%s}}\","
-    "\"unit_of_meas\":\"%s\","
-    "\"avty_t\":\"%s\","
-    "\"pl_avail\":\"online\","
-    "\"pl_not_avail\":\"offline\"}";
+    "\"unit_of_meas\":\"%s\"}";
 
 const char HASS_DISCOVER_DC1_SENSOR_WITHOUT_UNIT[] PROGMEM =
     "{\"name\":\"%s_%s\","
     "\"stat_t\":\"%s\","
-    "\"val_tpl\":\"{{value_json.%s}}\","
-    "\"avty_t\":\"%s\","
-    "\"pl_avail\":\"online\","
-    "\"pl_not_avail\":\"offline\"}";
+    "\"val_tpl\":\"{{value_json.%s}}\"}";
 
 class DC1 : public Module
 {

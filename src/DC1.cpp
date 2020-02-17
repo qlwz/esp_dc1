@@ -206,8 +206,7 @@ void DC1::mqttDiscovery(bool isEnable)
                 sprintf(message, HASS_DISCOVER_DC1_SENSOR_WITHOUT_UNIT,
                         UID, tims[i].c_str(),
                         energy.c_str(),
-                        tims[i].c_str(),
-                        availability.c_str());
+                        tims[i].c_str());
             }
             else
             {
@@ -215,8 +214,7 @@ void DC1::mqttDiscovery(bool isEnable)
                         UID, tims[i].c_str(),
                         energy.c_str(),
                         tims[i].c_str(),
-                        tims2[i].c_str(),
-                        availability.c_str());
+                        tims2[i].c_str());
             }
             Mqtt::publish(topic, message, true);
             //Debug::AddInfo(PSTR("discovery: %s - %s"), topic, message);
@@ -435,9 +433,7 @@ void DC1::httpHa(ESP8266WebServer *server)
             server->sendContent(F("\"\r\n    unit_of_measurement: \""));
             server->sendContent(tims2[i].c_str());
         }
-        server->sendContent(F("\"\r\n    availability_topic: \""));
-        server->sendContent(availability);
-        server->sendContent(F("\"\r\n    payload_available: \"online\"\r\n    payload_not_available: \"offline\"\r\n\r\n"));
+        server->sendContent(F("\"\r\n\r\n"));
     }
 }
 #pragma endregion
