@@ -145,10 +145,13 @@ void Framework::loop()
     }
     else
     {
+        yield();
         Led::loop();
         Mqtt::loop();
+        yield();
         module->loop();
         Wifi::loop();
+        yield();
         Http::loop();
         Rtc::loop();
     }
