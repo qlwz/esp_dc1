@@ -40,8 +40,14 @@
 ## 总开关控制USB
 
 1、抖音 搜索 DC1 按照李老师的硬件改造
+
 2、WEB页面 分开关联动 设置为不联动
 
+## 如何配网
+
+1、第一次使用自动进入配网模式
+
+2、以后通过长按总开发进入配网模式
 
 ## 如何编译
 Visual Studio Code + PlatformIO ID 开发  [安装](https://www.jianshu.com/p/c36f8be8c87f)
