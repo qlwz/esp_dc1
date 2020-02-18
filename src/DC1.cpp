@@ -287,7 +287,7 @@ void DC1::httpHtml(ESP8266WebServer *server)
     page += F("<br>今日用电量：<span id='today'>0</span> kWh");
     page += F("<br>昨日用电量：<span id='yesterday'>0</span> kWh");
     page += F("<br>&#12288;总用电量：<span id='total'>0</span> kWh");
-    page += F("<br>&#12288;开始时间：{v}");
+    page += F("<br>&#12288;开始时间：<span id='starttime'>{v}</span>");
     page += F("</div></td></tr></tbody></table>");
     page.replace(F("{v}"), kWhtotalTime);
 
@@ -340,8 +340,9 @@ void DC1::httpHtml(ESP8266WebServer *server)
     page += F("<tr><td>功率波动</td><td><input type='number' min='0' max='4000' name='energy_power_delta' required value='{v}'>&nbsp;0关闭，1-100为%，>100是差值(-100)</td></tr>");
     page.replace(F("{v}"), String(config.energy_power_delta));
 
-    page += F("<tr><td colspan='2'><button type='submit' class='btn-info'>设置</button></td></tr>");
-    page += F("<tr><td colspan='2'><button type='button' class='btn-success' onclick='window.location.href=\"/ha\"'>下载HA配置文件</button></td></tr>");
+    page += F("<tr><td colspan='2'><button type='submit' class='btn-info'>设置</button><br>");
+    page += F("<button type='button' class='btn-success' style='margin-top:10px' onclick='window.location.href=\"/ha\"'>下载HA配置文件</button><br>");
+    page += F("<button type='button' class='btn-danger' style='margin-top:10px' onclick=\"javascript:if(confirm('确定要重置用电量？')){ajaxPost('/dc1_setting', 'c=1');}\">重置用电量</button></td></tr>");
     page += F("</tbody></table></form>");
     radioJs += F("</script>");
 
@@ -371,6 +372,12 @@ void DC1::httpDo(ESP8266WebServer *server)
 
 void DC1::httpSetting(ESP8266WebServer *server)
 {
+    if (server->hasArg(F("c")))
+    {
+        energyClear();
+        server->send(200, F("text/html"), "{\"code\":1,\"msg\":\"重置用电量成功。\",\"data\":{" + httpGetStatus(server) + "}}");
+        return;
+    }
     config.power_on_state = server->arg(F("power_on_state")).toInt();
     config.power_mode = server->arg(F("power_mode")).toInt();
     config.logo_led = server->arg(F("logo_led")).toInt();
@@ -422,16 +429,16 @@ void DC1::httpHa(ESP8266WebServer *server)
         server->sendContent(F("  - platform: mqtt\r\n    name: \""));
         server->sendContent(UID);
         server->sendContent(F("_"));
-        server->sendContent(tims[i].c_str());
+        server->sendContent(tims[i]);
         server->sendContent(F("\"\r\n    state_topic: \""));
-        server->sendContent(energy.c_str());
+        server->sendContent(energy);
         server->sendContent(F("\"\r\n    value_template: \"{{value_json."));
-        server->sendContent(tims[i].c_str());
+        server->sendContent(tims[i]);
         server->sendContent(F("}}"));
         if (tims2[i].length() > 0)
         {
             server->sendContent(F("\"\r\n    unit_of_measurement: \""));
-            server->sendContent(tims2[i].c_str());
+            server->sendContent(tims2[i]);
         }
         server->sendContent(F("\"\r\n\r\n"));
     }

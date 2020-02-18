@@ -9,9 +9,12 @@ def bin_map_copy(source, target, env):
     #print(variant)
     #print(str(target[0]))
     
-    o = str(target[0]).replace("firmware.bin", "libc03\\esp_framework\\Rtc.cpp.o")
-    if os.path.isfile(o):
-        os.remove(o)
+    o = str(target[0]).replace("firmware.bin", "")
+    dirs = os.listdir(o)
+    for file in dirs:
+        p = os.path.join(o, file, "esp_framework\\Rtc.cpp.o")
+        if os.path.isfile(p):
+            os.remove(p)
     
     # check if output directories exist and create if necessary
     if not os.path.isdir(OUTPUT_DIR):

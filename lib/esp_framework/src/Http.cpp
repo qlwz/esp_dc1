@@ -251,8 +251,8 @@ void Http::handleRoot()
     page += F("</form>");
     page += F("<tr><td colspan='2' style='text-align:center'>OTA更新</td></tr>");
     page += F("<form method='POST' action='/ota' onsubmit='postform(this);return false'>");
-    page += F("<tr><td>OTA地址</td><td><input type='text' name='ota_url' placeholder='OTA地址' value='{ota_url}' style='width:90%'></td></tr>");
-    page += F("<tr><td colspan='2'><button type='submit' class='btn-success' style='margin-top: 10px' onclick=\"return confirm('确定要OTA更新？')\">OTA更新</button></td></tr>");
+    page += F("<tr><td>OTA地址</td><td><input type='text' name='ota_url' placeholder='OTA地址' value='{ota_url}' style='width:98%'></td></tr>");
+    page += F("<tr><td colspan='2'><button type='submit' class='btn-success' onclick=\"return confirm('确定要OTA更新？')\">OTA更新</button></td></tr>");
     page += F("</form>");
     page += F("</tbody></table>");
     page += F("</div>");
