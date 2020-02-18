@@ -11,7 +11,7 @@ WiFiEventHandler Wifi::STAGotIP;
 bool Wifi::isDHCP = true;
 
 unsigned long Wifi::configPortalStart = 0;
-unsigned long Wifi::connectStart = 0;
+//unsigned long Wifi::connectStart = 0;
 bool Wifi::connect = false;
 String Wifi::_ssid = "";
 String Wifi::_pass = "";
@@ -41,7 +41,7 @@ void Wifi::setupWifi()
     WiFi.hostname(UID);
     Debug::AddInfo(PSTR("Connecting to %s %s Wifi"), globalConfig.wifi.ssid, globalConfig.wifi.pass);
     STAGotIP = WiFi.onStationModeGotIP([](const WiFiEventStationModeGotIP &event) {
-        connectStart = 0;
+        //connectStart = 0;
         Debug::AddInfo(PSTR("WiFi1 connected. SSID: %s IP address: %s"), WiFi.SSID().c_str(), WiFi.localIP().toString().c_str());
         if (globalConfig.wifi.is_static && String(globalConfig.wifi.ip).equals(WiFi.localIP().toString()))
         {
@@ -71,7 +71,7 @@ void Wifi::setupWifi()
         WiFi.config(static_ip, static_gw, static_sn);
     }
 
-    connectStart = millis();
+    //connectStart = millis();
     WiFi.begin(globalConfig.wifi.ssid, globalConfig.wifi.pass);
 }
 
@@ -127,6 +127,7 @@ void Wifi::tryConnect(String ssid, String pass)
 
 void Wifi::loop()
 {
+    /*
     if (connectStart > 0 && millis() > connectStart + (ConnectTimeOut * 1000))
     {
         connectStart = 0;
@@ -136,6 +137,7 @@ void Wifi::loop()
             return;
         }
     }
+    */
     if (configPortalStart == 0)
     {
         return;

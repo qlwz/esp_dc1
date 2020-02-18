@@ -7,7 +7,7 @@
 #include <DNSServer.h>
 #include "Arduino.h"
 
-#define ConnectTimeOut 300
+//#define ConnectTimeOut 300
 #define ConfigPortalTimeOut 120
 #define MinimumWifiSignalQuality 8
 
@@ -20,7 +20,7 @@ private:
     static String _pass;
 
     static DNSServer *dnsServer;
-    static unsigned long connectStart;
+    //static unsigned long connectStart;
 
 public:
     static unsigned long configPortalStart;
