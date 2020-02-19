@@ -46,7 +46,7 @@ void DC1::init()
             switchRelay(ch, config.power_on_state == 1, false); // 开关通电时闭合
         }
         // 总开关关时跳过其他
-        if (ch == 0 && !lastState[0] && config.sub_kinkage != 0)
+        if (ch == 0 && !bitRead(lastState, 0) && config.sub_kinkage != 0)
         {
             break;
         }
@@ -113,6 +113,7 @@ void DC1::resetConfig()
     config.sub_kinkage = 2;
     config.energy_power_delta = 10;
     config.report_interval = 60;
+    config.energy_max_power = 2300;
 }
 
 void DC1::saveConfig(bool isEverySecond)
@@ -132,19 +133,19 @@ void DC1::mqttCallback(String topicStr, String str)
 {
     if (channels >= 1 && topicStr.endsWith("/POWER") || topicStr.endsWith("/POWER1"))
     {
-        switchRelay(0, (str == "ON" ? true : (str == "OFF" ? false : !DC1::lastState[0])));
+        switchRelay(0, (str == "ON" ? true : (str == "OFF" ? false : !bitRead(lastState, 0))));
     }
     else if (channels >= 2 && topicStr.endsWith("/POWER2"))
     {
-        switchRelay(1, (str == "ON" ? true : (str == "OFF" ? false : !DC1::lastState[1])));
+        switchRelay(1, (str == "ON" ? true : (str == "OFF" ? false : !bitRead(lastState, 1))));
     }
     else if (channels >= 3 && topicStr.endsWith("/POWER3"))
     {
-        switchRelay(2, (str == "ON" ? true : (str == "OFF" ? false : !DC1::lastState[2])));
+        switchRelay(2, (str == "ON" ? true : (str == "OFF" ? false : !bitRead(lastState, 2))));
     }
     else if (channels >= 4 && topicStr.endsWith("/POWER4"))
     {
-        switchRelay(3, (str == "ON" ? true : (str == "OFF" ? false : !DC1::lastState[3])));
+        switchRelay(3, (str == "ON" ? true : (str == "OFF" ? false : !bitRead(lastState, 3))));
     }
     else if (topicStr.endsWith("/clear"))
     {
@@ -248,7 +249,7 @@ String DC1::httpGetStatus(ESP8266WebServer *server)
     for (size_t ch = 0; ch < channels; ch++)
     {
         data += ",\"POWER" + String(ch + 1) + "\":";
-        data += lastState[ch] ? 1 : 0;
+        data += bitRead(lastState, ch) ? 1 : 0;
     }
     energyShow(false);
     data += String(tmpData);
@@ -265,7 +266,7 @@ void DC1::httpHtml(ESP8266WebServer *server)
     {
         page += F(" <button type='button' style='width:50px' onclick=\"ajaxPost('/dc1_do', 'do=T&c={ch}');\" id='POWER{ch}' ");
         page.replace(F("{ch}"), String(ch + 1));
-        if (lastState[ch])
+        if (bitRead(lastState, ch))
         {
             page += F("class='btn-success'>开</button>");
         }
@@ -340,6 +341,9 @@ void DC1::httpHtml(ESP8266WebServer *server)
     page += F("<tr><td>功率波动</td><td><input type='number' min='0' max='4000' name='energy_power_delta' required value='{v}'>&nbsp;0关闭，1-100为%，>100是差值(-100)</td></tr>");
     page.replace(F("{v}"), String(config.energy_power_delta));
 
+    page += F("<tr><td>过载保护</td><td><input type='number' min='0' max='2600' name='energy_max_power' required value='{v}'>&nbsp;W&nbsp;&nbsp;&nbsp;&nbsp;0关闭</td></tr>");
+    page.replace(F("{v}"), String(config.energy_max_power));
+
     page += F("<tr><td colspan='2'><button type='submit' class='btn-info'>设置</button><br>");
     page += F("<button type='button' class='btn-success' style='margin-top:10px' onclick='window.location.href=\"/ha\"'>下载HA配置文件</button><br>");
     page += F("<button type='button' class='btn-danger' style='margin-top:10px' onclick=\"javascript:if(confirm('确定要重置用电量？')){ajaxPost('/dc1_setting', 'c=1');}\">重置用电量</button></td></tr>");
@@ -365,7 +369,7 @@ void DC1::httpDo(ESP8266WebServer *server)
         return;
     }
     String str = server->arg(F("do"));
-    switchRelay(ch, (str == "ON" ? true : (str == "OFF" ? false : !DC1::lastState[ch])));
+    switchRelay(ch, (str == "ON" ? true : (str == "OFF" ? false : !bitRead(lastState, ch))));
 
     server->send(200, F("text/html"), "{\"code\":1,\"msg\":\"操作成功\",\"data\":{" + httpGetStatus(server) + "}}");
 }
@@ -385,7 +389,8 @@ void DC1::httpSetting(ESP8266WebServer *server)
     config.sub_kinkage = server->arg(F("sub_kinkage")).toInt();
 
     config.report_interval = server->arg(F("report_interval")).toInt();
-    config.energy_power_delta = server->arg(F("energy_power_delta")).toFloat();
+    config.energy_power_delta = server->arg(F("energy_power_delta")).toInt();
+    config.energy_max_power = server->arg(F("energy_max_power")).toInt();
 
     logoLed();
 
@@ -457,11 +462,11 @@ void DC1::logoLed()
     }
     else if (config.logo_led == 2)
     {
-        digitalWrite(LOGO_LED_PIN, lastState[0] ? LOW : HIGH);
+        digitalWrite(LOGO_LED_PIN, bitRead(lastState, 0) ? LOW : HIGH);
     }
     else if (config.logo_led == 3)
     {
-        digitalWrite(LOGO_LED_PIN, lastState[0] ? HIGH : LOW);
+        digitalWrite(LOGO_LED_PIN, bitRead(lastState, 0) ? HIGH : LOW);
     }
 }
 
@@ -475,7 +480,7 @@ void DC1::switchRelay(uint8_t ch, bool isOn, bool isSave)
 
     if (ch > 0 || (ch == 0 && config.sub_kinkage == 0))
     {
-        if (!lastState[0] && isOn && config.sub_kinkage != 0)
+        if (!bitRead(lastState, 0) && isOn && config.sub_kinkage != 0)
         {
             if (config.sub_kinkage == 1 || !isSave)
             {
@@ -491,7 +496,7 @@ void DC1::switchRelay(uint8_t ch, bool isOn, bool isSave)
         {
             for (size_t ch2 = (config.sub_kinkage == 0 ? 0 : 1); ch2 < channels; ch2++)
             {
-                if (ch2 != ch && lastState[ch2])
+                if (ch2 != ch && bitRead(lastState, ch2))
                 {
                     switchRelay(ch2, false, isSave);
                 }
@@ -509,7 +514,8 @@ void DC1::switchRelay(uint8_t ch, bool isOn, bool isSave)
             return;
         }
     }
-    lastState[ch] = isOn;
+
+    bitWrite(lastState, ch, isOn);
 
     Mqtt::publish((powerTopic + (ch + 1)), isOn ? "ON" : "OFF", globalConfig.mqtt.retain);
 
@@ -549,9 +555,9 @@ void DC1::checkButton(uint8_t ch)
 
     if (buttonState == 0)
     {
-        if (buttonTiming[ch] == false)
+        if (!bitRead(buttonTiming, ch))
         {
-            buttonTiming[ch] = true;
+            bitSet(buttonTiming, ch);
             buttonTimingStart[ch] = millis();
         }
         else
@@ -568,12 +574,12 @@ void DC1::checkButton(uint8_t ch)
     }
     else
     {
-        buttonTiming[ch] = false;
+        bitClear(buttonTiming, ch);
         if (buttonAction[ch] != 0)
         {
             if (buttonAction[ch] == 1) // 执行短按动作
             {
-                switchRelay(ch, !lastState[ch], true);
+                switchRelay(ch, !bitRead(lastState, ch), true);
             }
             else if (buttonAction[ch] == 2) // 执行长按动作
             {
@@ -729,6 +735,87 @@ void DC1::energyMarginCheck()
         cse7766->Energy.power_delta = false;
         reportEnergy();
     }
+    if (config.energy_max_power)
+    {
+        DC1::energyMaxPower();
+    }
+}
+
+void DC1::energyMaxPower()
+{
+    if (cse7766->Energy.active_power > config.energy_max_power)
+    {
+        if (!cse7766->Energy.mplh_counter)
+        {
+            cse7766->Energy.mplh_counter = MAX_POWER_HOLD;
+        }
+        else
+        {
+            cse7766->Energy.mplh_counter--;
+            if (!cse7766->Energy.mplh_counter)
+            {
+                Debug::AddError(PSTR("MaxPowerReached: %d"), (uint16_t)cse7766->Energy.active_power);
+                lastState2 = lastState;
+                for (size_t ch = 0; ch < channels; ch++)
+                {
+                    if (bitRead(lastState, ch))
+                    {
+                        switchRelay(ch, false, false);
+                    }
+                }
+                if (!cse7766->Energy.mplr_counter)
+                {
+                    cse7766->Energy.mplr_counter = MAX_POWER_RETRY + 1;
+                }
+                cse7766->Energy.mplw_counter = MAX_POWER_WINDOW;
+                cse7766->Energy.mplv_counter = 0;
+            }
+        }
+    }
+    else if (lastState && (cse7766->Energy.active_power <= config.energy_max_power))
+    {
+        cse7766->Energy.mplh_counter = 0;
+        cse7766->Energy.mplw_counter = 0;
+
+        if (cse7766->Energy.mplv_counter++ == 60)
+        {
+            cse7766->Energy.mplv_counter = 0;
+            cse7766->Energy.mplr_counter = 0;
+        }
+    }
+    if (!lastState)
+    {
+        if (cse7766->Energy.mplw_counter)
+        {
+            cse7766->Energy.mplw_counter--;
+        }
+        else
+        {
+            if (cse7766->Energy.mplr_counter)
+            {
+                cse7766->Energy.mplr_counter--;
+                if (cse7766->Energy.mplr_counter)
+                {
+                    Debug::AddError(PSTR("PowerMonitor ON"));
+                    if (lastState2)
+                    {
+                        for (size_t ch = 0; ch < channels; ch++)
+                        {
+                            if (bitRead(lastState2, ch))
+                            {
+                                switchRelay(ch, true, false);
+                            }
+                        }
+                        lastState2 = 0;
+                    }
+                }
+                else
+                {
+                    Debug::AddInfo(PSTR("MaxPowerReachedRetry OFF"));
+                }
+            }
+        }
+    }
 }
 
 void DC1::energyShow(bool isMqtt)
@@ -808,10 +895,11 @@ void DC1::reportEnergy()
     energyShow(true);
     Mqtt::publish(Mqtt::getTeleTopic("ENERGY"), tmpData, globalConfig.mqtt.retain);
 }
+
 void DC1::reportPower()
 {
     for (size_t ch = 0; ch < channels; ch++)
     {
-        Mqtt::publish((powerTopic + (ch + 1)), lastState[ch] ? "ON" : "OFF", globalConfig.mqtt.retain);
+        Mqtt::publish((powerTopic + (ch + 1)), bitRead(lastState, ch) ? "ON" : "OFF", globalConfig.mqtt.retain);
     }
 }

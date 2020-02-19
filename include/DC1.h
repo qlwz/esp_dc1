@@ -64,6 +64,7 @@ private:
     void energyUpdate();
     void energyUpdateToday();
     void energyMarginCheck();
+    void energyMaxPower();
     void energyShow(bool isMqtt);
 
     String powerTopic;
@@ -74,7 +75,7 @@ private:
     // 按键
     uint8_t buttonDebounceTime = 50;
     uint16_t buttonLongPressTime = 2000; // 2000 = 2s
-    bool buttonTiming[4] = {false, false, false, false};
+    uint8_t buttonTiming = 0;
     unsigned long buttonTimingStart[4] = {0, 0, 0, 0};
     uint8_t buttonAction[4] = {0, 0, 0, 0}; // 0 = 没有要执行的动作, 1 = 执行短按动作, 2 = 执行长按动作
     void checkButton(uint8_t ch);
@@ -90,13 +91,14 @@ private:
 
 public:
     DC1ConfigMessage config;
-    bool lastState[4] = {false, false, false, false};
+    uint8_t lastState = 0;
+    uint8_t lastState2 = 0;
     uint8_t channels = 0;
 
     void init();
     String getModuleName() { return F("dc1"); }
     String getModuleCNName() { return F("DC1插线板"); }
-    String getModuleVersion() { return F("2020.02.17.2000"); }
+    String getModuleVersion() { return F("2020.02.19.1500"); }
     String getModuleAuthor() { return F("情留メ蚊子"); }
     bool moduleLed();
 

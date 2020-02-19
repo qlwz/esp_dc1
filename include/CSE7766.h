@@ -10,9 +10,11 @@
 #define CSE_PREF 1000
 #define CSE_UREF 100
 
-#define USE_ENERGY_MARGIN_DETECTION // Add support for Energy Margin detection (+1k6 code)
-#define USE_ENERGY_POWER_LIMIT      // Add additional support for Energy Power Limit detection (+1k2 code
 #define ENERGY_WATCHDOG 4           // Allow up to 4 seconds before deciding no valid data present
+
+const uint16_t MAX_POWER_HOLD = 10;         // Time in SECONDS to allow max agreed power
+const uint16_t MAX_POWER_WINDOW = 30;       // Time in SECONDS to disable allow max agreed power
+const uint8_t MAX_POWER_RETRY = 5;          // Retry count allowing agreed power limit overflow
 
 typedef struct _CSE
 {
@@ -36,17 +38,22 @@ typedef struct _ENERGY
     float reactive_power = NAN; // 123.1 VAr
     float power_factor = NAN;   // 0.12
 
-    float daily = 0;           // 123.123 kWh
-    float total = 0;           // 12345.12345 kWh total energy
+    float daily = 0; // 123.123 kWh
+    float total = 0; // 12345.12345 kWh total energy
 
-    unsigned long kWhtoday_delta = 0;  // 1212312345 Wh 10^-5 (deca micro Watt hours) - Overflows to Energy.kWhtoday (HLW and CSE only)
-    unsigned long kWhtoday;            // 12312312 Wh * 10^-2 (deca milli Watt hours) - 5764 = 0.05764 kWh = 0.058 kWh = Energy.daily
+    unsigned long kWhtoday_delta = 0; // 1212312345 Wh 10^-5 (deca micro Watt hours) - Overflows to Energy.kWhtoday (HLW and CSE only)
+    unsigned long kWhtoday;           // 12312312 Wh * 10^-2 (deca milli Watt hours) - 5764 = 0.05764 kWh = 0.058 kWh = Energy.daily
 
     uint8_t data_valid = 0;
 
     uint16_t power_history[3] = {0};
     uint8_t power_steady_counter = 8; // Allow for power on stabilization
     bool power_delta = false;
+
+    uint16_t mplh_counter = 0;
+    uint16_t mplw_counter = 0;
+    uint8_t mplr_counter = 0;
+    uint8_t mplv_counter = 0;
 } ENERGY;
 
 const uint32_t HLW_PREF_PULSE = 12530; // was 4975us = 201Hz = 1000W

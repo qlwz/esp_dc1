@@ -22,5 +22,6 @@ message DC1ConfigMessage {
     uint32 energy_kWhtotal = 27 [(nanopb).int_size = IS_64];
     uint32 energy_kWhdoy = 28 [(nanopb).int_size = IS_16];
     uint32 energy_kWhtotal_time = 29 [(nanopb).int_size = IS_32];
+    uint32 energy_max_power = 30 [(nanopb).int_size = IS_16];
 
 }
