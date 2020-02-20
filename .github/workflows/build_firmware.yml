@@ -1,0 +1,49 @@
+name: Build Firmware
+
+on: 
+  release:
+    types: [published]
+  push:
+    branches: 
+      - master
+
+#  schedule:
+#    - cron: 0 8 * * 5
+#  watch:
+#    types: [started]
+
+jobs:
+  build:
+    runs-on: ubuntu-18.04
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@master
+
+    - name: Initializing environment
+      env:
+        DEBIAN_FRONTEND: noninteractive
+      run: |
+        pip3 install setuptools wheel
+        pip3 install platformio
+
+    - name: Update library
+      env:
+        DEBIAN_FRONTEND: noninteractive
+      run: |
+        export LC_ALL=C.UTF-8
+        export LANG=C.UTF-8
+        platformio update
+
+    - name: Build
+      run: |
+        export LC_ALL=C.UTF-8
+        export LANG=C.UTF-8
+        cd /home/runner/work/esp_dc1
+        platformio run
+
+    - name : Upload artifact
+      uses: actions/upload-artifact@master
+      with:
+        name: firmware
+        path: /home/runner/work/esp_dc1/.pio/build/dc1/firmware.bin
