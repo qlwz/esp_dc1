@@ -30,11 +30,11 @@ jobs:
 
     - name: Run PlatformIO
       run: |
-        cd /home/runner/work/esp_dc1
+        cd /home/runner/work/esp_dc1/esp_dc1
         platformio run 
 
     - name : Upload artifact
       uses: actions/upload-artifact@master
       with:
         name: firmware
-        path: /home/runner/work/esp_dc1/.pio/build/dc1/firmware.bin
+        path: /home/runner/work/esp_dc1/esp_dc1/.pio/build/dc1/firmware.bin
