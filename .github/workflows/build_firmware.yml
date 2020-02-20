@@ -33,14 +33,14 @@ jobs:
       run: |
         export LC_ALL=C.UTF-8
         export LANG=C.UTF-8
-        platformio update
+        /usr/local/bin/platformio update
 
     - name: Build
       run: |
         export LC_ALL=C.UTF-8
         export LANG=C.UTF-8
         cd /home/runner/work/esp_dc1
-        platformio run
+        /usr/local/bin/platformio run
 
     - name : Upload artifact
       uses: actions/upload-artifact@master
