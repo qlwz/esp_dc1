@@ -20,27 +20,18 @@ jobs:
     - name: Checkout
       uses: actions/checkout@master
 
-    - name: Initializing environment
-      env:
-        DEBIAN_FRONTEND: noninteractive
-      run: |
-        pip3 install setuptools wheel
-        pip3 install platformio
+    - name: Set up Python
+      uses: actions/setup-python@v1
 
-    - name: Update library
-      env:
-        DEBIAN_FRONTEND: noninteractive
+    - name: Install dependencies
       run: |
-        export LC_ALL=C.UTF-8
-        export LANG=C.UTF-8
-        /usr/local/bin/platformio update
+        python -m pip install --upgrade pip
+        pip install platformio
 
-    - name: Build
+    - name: Run PlatformIO
       run: |
-        export LC_ALL=C.UTF-8
-        export LANG=C.UTF-8
         cd /home/runner/work/esp_dc1
-        /usr/local/bin/platformio run
+        platformio run 
 
     - name : Upload artifact
       uses: actions/upload-artifact@master
