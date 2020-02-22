@@ -48,7 +48,7 @@
 
 1、第一次使用自动进入配网模式
 
-2、以后通过长按总开发进入配网模式
+2、以后通过长按【总开关】进入配网模式
 
 ## 如何编译
 Visual Studio Code + PlatformIO ID 开发  [安装](https://www.jianshu.com/p/c36f8be8c87f)

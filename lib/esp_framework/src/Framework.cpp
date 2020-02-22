@@ -84,7 +84,8 @@ void Framework::setup()
     }
     else if (rebootCount == 2)
     {
-        Config::resetConfig();
+        Config::readConfig();
+        module->resetConfig();
     }
     else
     {

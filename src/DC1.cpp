@@ -29,6 +29,9 @@ void DC1::init()
     pinMode(LOGO_LED_PIN, OUTPUT);
     logoLed();
 
+    strcpy(powerStatTopic, Mqtt::getStatTopic(F("POWER1")).c_str());
+    strcpy(energyTeleTopic, Mqtt::getTeleTopic("ENERGY").c_str());
+
     channels = 4;
     for (uint8_t ch = 0; ch < channels; ch++)
     {
@@ -52,7 +55,6 @@ void DC1::init()
         }
     }
     energyInit();
-    powerTopic = Mqtt::getStatTopic(F("POWER"));
 }
 
 bool DC1::moduleLed()
@@ -131,7 +133,7 @@ void DC1::saveConfig(bool isEverySecond)
 
 void DC1::mqttCallback(String topicStr, String str)
 {
-    if (channels >= 1 && topicStr.endsWith("/POWER") || topicStr.endsWith("/POWER1"))
+    if (channels >= 1 && topicStr.endsWith("/POWER1"))
     {
         switchRelay(0, (str == "ON" ? true : (str == "OFF" ? false : !bitRead(lastState, 0))));
     }
@@ -160,6 +162,8 @@ void DC1::mqttCallback(String topicStr, String str)
 
 void DC1::mqttConnected()
 {
+    strcpy(powerStatTopic, Mqtt::getStatTopic(F("POWER1")).c_str());
+    strcpy(energyTeleTopic, Mqtt::getTeleTopic(F("ENERGY")).c_str());
     if (globalConfig.mqtt.discovery)
     {
         mqttDiscovery(true);
@@ -174,16 +178,19 @@ void DC1::mqttDiscovery(bool isEnable)
     char topic[50];
     char message[500];
 
-    String tmp = Mqtt::getCmndTopic(F("POWER"));
     String availability = Mqtt::getTeleTopic(F("availability"));
+    char cmndTopic[100];
+    strcpy(cmndTopic, Mqtt::getCmndTopic(F("POWER1")).c_str());
     for (size_t ch = 0; ch < channels; ch++)
     {
         sprintf(topic, "%s/switch/%s_%d/config", globalConfig.mqtt.discovery_prefix, UID, (ch + 1));
         if (isEnable)
         {
+            cmndTopic[strlen(cmndTopic) - 1] = ch + 49;           // 48 + 1 + ch
+            powerStatTopic[strlen(powerStatTopic) - 1] = ch + 49; // 48 + 1 + ch
             sprintf(message, HASS_DISCOVER_DC1_SWICH, UID, (ch + 1),
-                    (tmp + (ch + 1)).c_str(),
-                    (powerTopic + (ch + 1)).c_str(),
+                    cmndTopic,
+                    powerStatTopic,
                     availability.c_str());
             Mqtt::publish(topic, message, true);
             //Debug::AddInfo(PSTR("discovery: %s - %s"), topic, message);
@@ -408,18 +415,21 @@ void DC1::httpHa(ESP8266WebServer *server)
     server->send(200, F("Content-Type: application/octet-stream"), "");
 
     String availability = Mqtt::getTeleTopic(F("availability"));
-    String tmp = Mqtt::getCmndTopic(F("POWER"));
+    char cmndTopic[100];
+    strcpy(cmndTopic, Mqtt::getCmndTopic(F("POWER1")).c_str());
     server->sendContent(F("switch:\r\n"));
     for (size_t ch = 0; ch < channels; ch++)
     {
+        cmndTopic[strlen(cmndTopic) - 1] = ch + 49;           // 48 + 1 + ch
+        powerStatTopic[strlen(powerStatTopic) - 1] = ch + 49; // 48 + 1 + ch
         server->sendContent(F("  - platform: mqtt\r\n    name: \""));
         server->sendContent(UID);
         server->sendContent(F("_"));
         server->sendContent(String((ch + 1)));
         server->sendContent(F("\"\r\n    state_topic: \""));
-        server->sendContent((powerTopic + (ch + 1)));
+        server->sendContent(powerStatTopic);
         server->sendContent(F("\"\r\n    command_topic: \""));
-        server->sendContent((tmp + (ch + 1)));
+        server->sendContent(cmndTopic);
         server->sendContent(F("\"\r\n    payload_on: \"ON\"\r\n    payload_off: \"OFF\"\r\n    availability_topic: \""));
         server->sendContent(availability);
         server->sendContent(F("\"\r\n    payload_available: \"online\"\r\n    payload_not_available: \"offline\"\r\n\r\n"));
@@ -517,7 +527,8 @@ void DC1::switchRelay(uint8_t ch, bool isOn, bool isSave)
 
     bitWrite(lastState, ch, isOn);
 
-    Mqtt::publish((powerTopic + (ch + 1)), isOn ? "ON" : "OFF", globalConfig.mqtt.retain);
+    powerStatTopic[strlen(powerStatTopic) - 1] = ch + 49; // 48 + 1 + ch
+    Mqtt::publish(powerStatTopic, isOn ? "ON" : "OFF", globalConfig.mqtt.retain);
 
     if (isSave && config.power_on_state > 0)
     {
@@ -893,13 +904,14 @@ void DC1::energyShow(bool isMqtt)
 void DC1::reportEnergy()
 {
     energyShow(true);
-    Mqtt::publish(Mqtt::getTeleTopic("ENERGY"), tmpData, globalConfig.mqtt.retain);
+    Mqtt::publish(energyTeleTopic, tmpData, globalConfig.mqtt.retain);
 }
 
 void DC1::reportPower()
 {
     for (size_t ch = 0; ch < channels; ch++)
     {
-        Mqtt::publish((powerTopic + (ch + 1)), bitRead(lastState, ch) ? "ON" : "OFF", globalConfig.mqtt.retain);
+        powerStatTopic[strlen(powerStatTopic) - 1] = ch + 49; // 48 + 1 + ch
+        Mqtt::publish(powerStatTopic, bitRead(lastState, ch) ? "ON" : "OFF", globalConfig.mqtt.retain);
     }
 }

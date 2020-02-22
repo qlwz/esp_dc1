@@ -69,15 +69,16 @@ protected:
     uint8_t rawDataIndex = 0;
 
     void cseReceived();
-    unsigned long powerCalibration = HLW_PREF_PULSE;   // 364
-    unsigned long voltageCalibration = HLW_UREF_PULSE; // 368
-    unsigned long currentCalibration = HLW_IREF_PULSE; // 36C
 
 public:
     CSE7766(uint8_t rxPin, uint16_t baudrate = 4800);
     CSE Cse;
     ENERGY Energy;
 
+    unsigned long powerCalibration = HLW_PREF_PULSE;   // 364
+    unsigned long voltageCalibration = HLW_UREF_PULSE; // 368
+    unsigned long currentCalibration = HLW_IREF_PULSE; // 36C
+    
     void loop();
     bool everySecond();
 };

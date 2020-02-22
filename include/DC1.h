@@ -67,7 +67,8 @@ private:
     void energyMaxPower();
     void energyShow(bool isMqtt);
 
-    String powerTopic;
+    char powerStatTopic[100];
+    char energyTeleTopic[100];
 
     uint8_t btnGPIO[4] = {KEY_0_PIN, KEY_1_PIN, KEY_2_PIN, KEY_3_PIN};
     uint8_t relGPIO[4] = {REL_0_PIN, REL_1_PIN, REL_2_PIN, REL_3_PIN};
