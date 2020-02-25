@@ -80,10 +80,10 @@ ioBroker相关接入问题可以加QQ群776817275咨询
 
 # 固件截图
 
-![image](http://file.qqlite.cn/esp8266/esp_dc1/file/images/tab1.png)
-![image](http://file.qqlite.cn/esp8266/esp_dc1/file/images/tab2.png)
-![image](http://file.qqlite.cn/esp8266/esp_dc1/file/images/tab3.png)
-![image](http://file.qqlite.cn/esp8266/esp_dc1/file/images/tab4.png)
+![image](https://www.qqlite.cn/esp8266/esp_dc1/file/images/tab1.png)
+![image](https://www.qqlite.cn/esp8266/esp_dc1/file/images/tab2.png)
+![image](https://www.qqlite.cn/esp8266/esp_dc1/file/images/tab3.png)
+![image](https://www.qqlite.cn/esp8266/esp_dc1/file/images/tab4.png)
 
 ## 致谢
 以下排名不分先后，为随机。
