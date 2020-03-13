@@ -29,8 +29,8 @@ void DC1::init()
     pinMode(LOGO_LED_PIN, OUTPUT);
     logoLed();
 
-    strcpy(powerStatTopic, Mqtt::getStatTopic(F("POWER1")).c_str());
-    strcpy(energyTeleTopic, Mqtt::getTeleTopic("ENERGY").c_str());
+    strcpy(powerStatTopic, Mqtt::getStatTopic(F("power1")).c_str());
+    strcpy(energyTeleTopic, Mqtt::getTeleTopic("energy").c_str());
 
     channels = 4;
     for (uint8_t ch = 0; ch < channels; ch++)
@@ -133,21 +133,21 @@ void DC1::saveConfig(bool isEverySecond)
 
 void DC1::mqttCallback(String topicStr, String str)
 {
-    if (channels >= 1 && topicStr.endsWith("/POWER1"))
+    if (channels >= 1 && topicStr.endsWith("/power1"))
     {
-        switchRelay(0, (str == "ON" ? true : (str == "OFF" ? false : !bitRead(lastState, 0))));
+        switchRelay(0, (str == "on" ? true : (str == "off" ? false : !bitRead(lastState, 0))));
     }
-    else if (channels >= 2 && topicStr.endsWith("/POWER2"))
+    else if (channels >= 2 && topicStr.endsWith("/power2"))
     {
-        switchRelay(1, (str == "ON" ? true : (str == "OFF" ? false : !bitRead(lastState, 1))));
+        switchRelay(1, (str == "on" ? true : (str == "off" ? false : !bitRead(lastState, 1))));
     }
-    else if (channels >= 3 && topicStr.endsWith("/POWER3"))
+    else if (channels >= 3 && topicStr.endsWith("/power3"))
     {
-        switchRelay(2, (str == "ON" ? true : (str == "OFF" ? false : !bitRead(lastState, 2))));
+        switchRelay(2, (str == "on" ? true : (str == "off" ? false : !bitRead(lastState, 2))));
     }
-    else if (channels >= 4 && topicStr.endsWith("/POWER4"))
+    else if (channels >= 4 && topicStr.endsWith("/power4"))
     {
-        switchRelay(3, (str == "ON" ? true : (str == "OFF" ? false : !bitRead(lastState, 3))));
+        switchRelay(3, (str == "on" ? true : (str == "off" ? false : !bitRead(lastState, 3))));
     }
     else if (topicStr.endsWith("/clear"))
     {
@@ -162,8 +162,8 @@ void DC1::mqttCallback(String topicStr, String str)
 
 void DC1::mqttConnected()
 {
-    strcpy(powerStatTopic, Mqtt::getStatTopic(F("POWER1")).c_str());
-    strcpy(energyTeleTopic, Mqtt::getTeleTopic(F("ENERGY")).c_str());
+    strcpy(powerStatTopic, Mqtt::getStatTopic(F("power1")).c_str());
+    strcpy(energyTeleTopic, Mqtt::getTeleTopic(F("energy")).c_str());
     if (globalConfig.mqtt.discovery)
     {
         mqttDiscovery(true);
@@ -180,7 +180,7 @@ void DC1::mqttDiscovery(bool isEnable)
 
     String availability = Mqtt::getTeleTopic(F("availability"));
     char cmndTopic[100];
-    strcpy(cmndTopic, Mqtt::getCmndTopic(F("POWER1")).c_str());
+    strcpy(cmndTopic, Mqtt::getCmndTopic(F("power1")).c_str());
     for (size_t ch = 0; ch < channels; ch++)
     {
         sprintf(topic, "%s/switch/%s_%d/config", globalConfig.mqtt.discovery_prefix, UID, (ch + 1));
@@ -203,7 +203,7 @@ void DC1::mqttDiscovery(bool isEnable)
 
     String tims[] = {"voltage", "current", "power", "apparent_power", "reactive_power", "factor", "total", "yesterday", "today", "starttime"};
     String tims2[] = {"V", "A", "W", "VA", "VAr", "", "kWh", "kWh", "kWh", ""};
-    String energy = Mqtt::getTeleTopic(F("ENERGY"));
+    String energy = Mqtt::getTeleTopic(F("energy"));
     for (size_t i = 0; i < 10; i++)
     {
         sprintf(topic, "%s/sensor/%s_%s/config", globalConfig.mqtt.discovery_prefix, UID, tims[i].c_str());
@@ -255,7 +255,7 @@ String DC1::httpGetStatus(ESP8266WebServer *server)
     String data;
     for (size_t ch = 0; ch < channels; ch++)
     {
-        data += ",\"POWER" + String(ch + 1) + "\":";
+        data += ",\"power" + String(ch + 1) + "\":";
         data += bitRead(lastState, ch) ? 1 : 0;
     }
     energyShow(false);
@@ -266,12 +266,12 @@ String DC1::httpGetStatus(ESP8266WebServer *server)
 void DC1::httpHtml(ESP8266WebServer *server)
 {
     String radioJs = F("<script type='text/javascript'>");
-    radioJs += F("function setDataSub(data,key){if(key.substr(0,5)=='POWER'){var t=id(key);var v=data[key];t.setAttribute('class',v==1?'btn-success':'btn-info');t.innerHTML=v==1?'开':'关';return true}return false}");
+    radioJs += F("function setDataSub(data,key){if(key.substr(0,5)=='power'){var t=id(key);var v=data[key];t.setAttribute('class',v==1?'btn-success':'btn-info');t.innerHTML=v==1?'开':'关';return true}return false}");
     String page = F("<table class='gridtable'><thead><tr><th colspan='2'>开关状态</th></tr></thead><tbody>");
     page += F("<tr colspan='2' style='text-align:center'><td>");
     for (size_t ch = 0; ch < channels; ch++)
     {
-        page += F(" <button type='button' style='width:50px' onclick=\"ajaxPost('/dc1_do', 'do=T&c={ch}');\" id='POWER{ch}' ");
+        page += F(" <button type='button' style='width:50px' onclick=\"ajaxPost('/dc1_do', 'do=T&c={ch}');\" id='power{ch}' ");
         page.replace(F("{ch}"), String(ch + 1));
         if (bitRead(lastState, ch))
         {
@@ -376,7 +376,7 @@ void DC1::httpDo(ESP8266WebServer *server)
         return;
     }
     String str = server->arg(F("do"));
-    switchRelay(ch, (str == "ON" ? true : (str == "OFF" ? false : !bitRead(lastState, ch))));
+    switchRelay(ch, (str == "on" ? true : (str == "off" ? false : !bitRead(lastState, ch))));
 
     server->send(200, F("text/html"), "{\"code\":1,\"msg\":\"操作成功\",\"data\":{" + httpGetStatus(server) + "}}");
 }
@@ -416,7 +416,7 @@ void DC1::httpHa(ESP8266WebServer *server)
 
     String availability = Mqtt::getTeleTopic(F("availability"));
     char cmndTopic[100];
-    strcpy(cmndTopic, Mqtt::getCmndTopic(F("POWER1")).c_str());
+    strcpy(cmndTopic, Mqtt::getCmndTopic(F("power1")).c_str());
     server->sendContent(F("switch:\r\n"));
     for (size_t ch = 0; ch < channels; ch++)
     {
@@ -430,12 +430,12 @@ void DC1::httpHa(ESP8266WebServer *server)
         server->sendContent(powerStatTopic);
         server->sendContent(F("\"\r\n    command_topic: \""));
         server->sendContent(cmndTopic);
-        server->sendContent(F("\"\r\n    payload_on: \"ON\"\r\n    payload_off: \"OFF\"\r\n    availability_topic: \""));
+        server->sendContent(F("\"\r\n    payload_on: \"on\"\r\n    payload_off: \"off\"\r\n    availability_topic: \""));
         server->sendContent(availability);
         server->sendContent(F("\"\r\n    payload_available: \"online\"\r\n    payload_not_available: \"offline\"\r\n\r\n"));
     }
 
-    String energy = Mqtt::getTeleTopic(F("ENERGY"));
+    String energy = Mqtt::getTeleTopic(F("energy"));
     String tims[] = {"voltage", "current", "power", "apparent_power", "reactive_power", "factor", "total", "yesterday", "today", "starttime"};
     String tims2[] = {"V", "A", "W", "VA", "VAr", "", "kWh", "kWh", "kWh", ""};
     server->sendContent(F("sensor:\r\n"));
@@ -528,7 +528,7 @@ void DC1::switchRelay(uint8_t ch, bool isOn, bool isSave)
     bitWrite(lastState, ch, isOn);
 
     powerStatTopic[strlen(powerStatTopic) - 1] = ch + 49; // 48 + 1 + ch
-    Mqtt::publish(powerStatTopic, isOn ? "ON" : "OFF", globalConfig.mqtt.retain);
+    Mqtt::publish(powerStatTopic, isOn ? "on" : "off", globalConfig.mqtt.retain);
 
     if (isSave && config.power_on_state > 0)
     {
@@ -912,6 +912,6 @@ void DC1::reportPower()
     for (size_t ch = 0; ch < channels; ch++)
     {
         powerStatTopic[strlen(powerStatTopic) - 1] = ch + 49; // 48 + 1 + ch
-        Mqtt::publish(powerStatTopic, bitRead(lastState, ch) ? "ON" : "OFF", globalConfig.mqtt.retain);
+        Mqtt::publish(powerStatTopic, bitRead(lastState, ch) ? "on" : "off", globalConfig.mqtt.retain);
     }
 }
