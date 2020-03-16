@@ -12,5 +12,5 @@
 
 ## 使用方法
 - app下载：https://github.com/OpenIoTHub/OpenIoTHub/releases v1.2.7+
-- app打开“智能选项卡”即可搜索到之前已经配网成功的插排
+- app打开“智能”选项卡(如图1)即可搜索到之前已经配网成功的插排
 - app远程控制可以使用OpenIoTHub[网关](https://github.com/OpenIoTHub/gateway-go) (通过网关可以支持本固件插排的远程使用)
