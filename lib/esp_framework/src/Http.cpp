@@ -804,7 +804,24 @@ void Http::begin()
     {
         module->httpAdd(server);
     }
-    MDNS.begin(UID);
+    //MDNS.begin(UID);
+    while (WiFi.status() != WL_CONNECTED) {
+        Debug::AddInfo("wait wifi connection...");
+        delay(500);
+    }
+    if (!MDNS.begin(UID)) {
+        Debug::AddInfo("Error setting up MDNS responder!");
+    }
+    MDNS.addService("iotdevice", "tcp", globalConfig.http.port);
+    MDNS.addServiceTxt("iotdevice", "tcp", "name", module->getModuleCNName());
+    MDNS.addServiceTxt("iotdevice", "tcp", "model", "com.94qing.devices.esp_dc1");
+    MDNS.addServiceTxt("iotdevice", "tcp", "mac", WiFi.macAddress());
+    MDNS.addServiceTxt("iotdevice", "tcp", "id", ESP.getSketchMD5());
+    MDNS.addServiceTxt("iotdevice", "tcp", "author", module->getModuleAuthor());
+    MDNS.addServiceTxt("iotdevice", "tcp", "email", "qlwz@qq.com");
+    MDNS.addServiceTxt("iotdevice", "tcp", "home-page", "https://github.com/qlwz");
+    MDNS.addServiceTxt("iotdevice", "tcp", "firmware-respository", "https://github.com/qlwz/esp_dc1");
+    MDNS.addServiceTxt("iotdevice", "tcp", "firmware-version", module ? module->getModuleVersion() : F("0"));
     server->begin(globalConfig.http.port);
     Debug::AddInfo(PSTR("HTTP server started port: %d"), globalConfig.http.port);
 }
