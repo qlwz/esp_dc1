@@ -72,7 +72,12 @@ ioBroker是基于nodejs的物联网的集成平台，为物联网设备提供核
 #### 接入方法
 ioBroker相关接入问题可以加QQ群776817275咨询
 
-### 3、其他支持mqtt的平台
+### 3、OPenIoTHub
+OpenIoTHub是一个开源的物联网平台，系统由app，网关，服务器组成，支持app配网和发现，通过网关可以是原本只能在局域网操控的设备支持远程操控。
+#### 接入方法
+详见[OpenIoTHubSupport.md](./OpenIoTHubSupport.md)
+
+### 4、其他支持mqtt的平台
 理论上来说，只要是支持MQTT的平台都可以实现接入。
 
 #### 接入方法
