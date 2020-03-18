@@ -10,7 +10,7 @@ install:
 - platformio update
 script:
 - mkdir build
-- platformio ci --keep-build-dir --build-dir ./build --lib="./lib/esp_framework/src" --lib="./lib/esp_framework/include" --lib="./include" --project-conf=platformio.ini
+- platformio ci --keep-build-dir --build-dir ./build --lib="./lib/esp_framework/src" --lib="./lib/esp_framework/include" --project-conf=platformio.ini
   src/main.cpp
 before_deploy:
 - platformio ci -h
