@@ -10,7 +10,7 @@ install:
 - platformio update
 script:
 - mkdir build
-- platformio ci --keep-build-dir --build-dir ./build --lib="./lib/esp_framework/src" --project-conf=platformio.ini
+- platformio ci --keep-build-dir --build-dir ./build --lib="./lib/esp_framework/src" --lib="./lib/esp_framework/include" --lib="./include" --project-conf=platformio.ini
   src/main.cpp
 before_deploy:
 - platformio ci -h
@@ -24,5 +24,5 @@ before_deploy:
 #     - "build/.pio/build/dc1/firmware.bin"
 #   skip_cleanup: true
 #   on:
-#     repo: IoTDevice/phicomm_dc1
+#     repo: IoTDevice/esp_dc1
 #     tags: true
