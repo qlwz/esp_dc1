@@ -10,6 +10,10 @@
 ![image](./file/images/app/ui.jpg)
 ![image](./file/images/app/device-info.jpg)
 
+## 如何配网  
+1、第一次使用自动进入配网模式  
+2、以后通过长按【总开关】进入配网模式  
+
 ## 使用方法
 - app下载：https://github.com/OpenIoTHub/OpenIoTHub/releases v1.2.7+
 - app打开“智能”选项卡(如图1)即可搜索到之前已经配网成功的插排
