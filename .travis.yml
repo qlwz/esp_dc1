@@ -1,67 +1,28 @@
-# Continuous Integration (CI) is the practice, in software
-# engineering, of merging all developer working copies with a shared mainline
-# several times a day < https://docs.platformio.org/page/ci/index.html >
-#
-# Documentation:
-#
-# * Travis CI Embedded Builds with PlatformIO
-#   < https://docs.travis-ci.com/user/integration/platformio/ >
-#
-# * PlatformIO integration with Travis CI
-#   < https://docs.platformio.org/page/ci/travis.html >
-#
-# * User Guide for `platformio ci` command
-#   < https://docs.platformio.org/page/userguide/cmd_ci.html >
-#
-#
-# Please choose one of the following templates (proposed below) and uncomment
-# it (remove "# " before each line) or use own configuration according to the
-# Travis CI documentation (see above).
-#
-
-
-#
-# Template #1: General project. Test it using existing `platformio.ini`.
-#
-
-# language: python
-# python:
-#     - "2.7"
-#
-# sudo: false
-# cache:
-#     directories:
-#         - "~/.platformio"
-#
-# install:
-#     - pip install -U platformio
-#     - platformio update
-#
-# script:
-#     - platformio run
-
-
-#
-# Template #2: The project is intended to be used as a library with examples.
-#
-
-# language: python
-# python:
-#     - "2.7"
-#
-# sudo: false
-# cache:
-#     directories:
-#         - "~/.platformio"
-#
-# env:
-#     - PLATFORMIO_CI_SRC=path/to/test/file.c
-#     - PLATFORMIO_CI_SRC=examples/file.ino
-#     - PLATFORMIO_CI_SRC=path/to/test/directory
-#
-# install:
-#     - pip install -U platformio
-#     - platformio update
-#
-# script:
-#     - platformio ci --lib="." --board=ID_1 --board=ID_2 --board=ID_N
+language: python
+python:
+- '2.7'
+sudo: false
+cache:
+  directories:
+  - "~/.platformio"
+install:
+- pip install -U platformio
+- platformio update
+script:
+- mkdir build
+- platformio ci --keep-build-dir --build-dir ./build --lib="./lib/esp_framework/src" --lib="./lib/esp_framework/include" --project-conf=platformio.ini
+  src/main.cpp
+before_deploy:
+- platformio ci -h
+- ls -a
+- find . -name "*.bin"
+# deploy:
+#   provider: releases
+#   api_key:
+#     secure: FNZS+KTgsSo6QAZgncYmZLNHfuqCnD2yRQkjj4GYl5M1vNGTSncmZMTVoH3oFHmpsNG3wZ0G/c8yT48Fxhn1T/aGSAXxlffeJ36XN+5gSrPFk+dkHdV26X9tpCglUTkOMydtlJCQQJBd0km0XlniFKV0guDezWADvwERegHXf/CaiZY/YccorfHbJxDF9e765aYVY+bvkixOoC9iXMYBdbYTACqFPddr5x2LfdRNDMLlP29XYO/5909e9xU3fy06LgisYHQgYpTfAyASYqmxL0Qhugd2Z71VY098NRDfdA1agmnKM9nhjwYG791eqmKVSVZ4UUe7dCjHe9czd0tHMGiP8nz+bxCKNIZsDm/drHwP6FPx0eHyKb8eY3czvRT6onrBdzJHUtCl55NbUgk3W/ijj9U1BlzyA3uSIavNAXsK4R8Tf24G4qXtcq6MJos/STh2viBxHGvboTfAqxy3F/pVwNmgupW4GIZYds0/OZ302xSpUtFO37IR9SaAaMb0/O/3Td768DkuesaWymU7Gv1NDkMMYX3lttGLIOTz/qyXp8FAn5zvDyMhJDkb3xyJ45yQajp+LRwxxZ7bQmmoAzIO18Tst/GWDe8NxpeQCA3eKmLGvjunV+WfIto5O6cSfMjZKtI15WTbh25IXWEIABjD2BMiOoCt7oh6mXIGACM=
+#   file:
+#     - "build/.pio/build/dc1/firmware.bin"
+#   skip_cleanup: true
+#   on:
+#     repo: IoTDevice/esp_dc1
+#     tags: true
