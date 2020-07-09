@@ -1,4 +1,5 @@
 // Mqtt.h
+#ifndef DISABLE_MQTT
 
 #ifndef _MQTT_h
 #define _MQTT_h
@@ -55,5 +56,7 @@ public:
     static bool unsubscribe(String topic);
     static void perSecondDo();
 };
+
+#endif
 
 #endif

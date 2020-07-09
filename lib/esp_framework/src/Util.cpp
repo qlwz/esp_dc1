@@ -42,7 +42,7 @@ char *Util::dtostrfd(double number, unsigned char prec, char *s)
 {
     if ((isnan(number)) || (isinf(number)))
     { // Fix for JSON output (https://stackoverflow.com/questions/1423081/json-left-out-infinity-and-nan-json-status-in-ecmascript)
-        strcpy(s, "null");
+        strcpy(s, PSTR("null"));
         return s;
     }
     else

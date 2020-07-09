@@ -15,7 +15,7 @@ void Led::init(uint8_t _io, uint8_t _light)
     light = _light;
     pinMode(io, OUTPUT);
 
-    Led::ledType = 0;
+    Led::ledType = 99;
     ledTicker = new Ticker();
     ledTicker2 = new Ticker();
 
@@ -44,6 +44,7 @@ void Led::loop()
             ledTicker->attach(0.2, []() { toggle(); });
         }
     }
+#ifndef DISABLE_MQTT
     else if (!Mqtt::mqttClient.connected())
     {
         if (Led::ledType != 1)
@@ -52,6 +53,7 @@ void Led::loop()
             ledTicker->attach(0.3, []() { toggle(); });
         }
     }
+#endif
     else
     {
         if (Led::ledType != 2)

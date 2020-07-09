@@ -1,3 +1,5 @@
+#ifndef DISABLE_MQTT
+
 #include <PubSubClient.h>
 #include "Mqtt.h"
 #include "Module.h"
@@ -50,8 +52,8 @@ bool Mqtt::mqttConnect()
 void Mqtt::doReportHeartbeat()
 {
     char message[250];
-    sprintf(message, "{\"UID\":\"%s\",\"SSID\":\"%s\",\"RSSI\":\"%s\",\"Version\":\"%s\",\"ip\":\"%s\",\"mac\":\"%s\",\"freeMem\":%d,\"uptime\":%d}",
-            UID, WiFi.SSID().c_str(), String(WiFi.RSSI()).c_str(), (module ? module->getModuleVersion().c_str() : "0"), WiFi.localIP().toString().c_str(), WiFi.macAddress().c_str(), ESP.getFreeHeap(), millis() / 1000);
+    sprintf(message, PSTR("{\"UID\":\"%s\",\"SSID\":\"%s\",\"RSSI\":\"%s\",\"Version\":\"%s\",\"ip\":\"%s\",\"mac\":\"%s\",\"freeMem\":%d,\"uptime\":%d}"),
+            UID, WiFi.SSID().c_str(), String(WiFi.RSSI()).c_str(), (module ? module->getModuleVersion().c_str() : PSTR("0")), WiFi.localIP().toString().c_str(), WiFi.macAddress().c_str(), ESP.getFreeHeap(), millis() / 1000);
     //Debug::AddInfo(PSTR("%s"), message);
     publish(getTeleTopic(F("HEARTBEAT")), message);
 }
@@ -109,9 +111,9 @@ void Mqtt::loop()
 
 void Mqtt::setTopic()
 {
-    topicCmnd = getTopic(0, "");
-    topicStat = getTopic(1, "");
-    topicTele = getTopic(2, "");
+    topicCmnd = getTopic(0, F(""));
+    topicStat = getTopic(1, F(""));
+    topicTele = getTopic(2, F(""));
 }
 
 String Mqtt::getCmndTopic(String topic)
@@ -202,9 +204,10 @@ String Mqtt::getTopic(uint8_t prefix, String subtopic)
     fulltopic.replace(F("%prefix%"), (prefix == 0 ? F("cmnd") : ((prefix == 1 ? F("stat") : F("tele")))));
     fulltopic.replace(F("%hostname%"), UID);
     fulltopic.replace(F("%module%"), module ? module->getModuleName() : F("module"));
-    fulltopic.replace(F("#"), "");
-    fulltopic.replace(F("//"), "/");
+    fulltopic.replace(F("#"), F(""));
+    fulltopic.replace(F("//"), F("/"));
     if (!fulltopic.endsWith(F("/")))
         fulltopic += F("/");
     return fulltopic + subtopic;
 }
+#endif

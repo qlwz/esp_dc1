@@ -7,7 +7,9 @@
 #include "Config.h"
 #include "Led.h"
 #include "Wifi.h"
+#ifndef DISABLE_MQTT
 #include "Mqtt.h"
+#endif
 #include "Debug.h"
 #include "Util.h"
 
@@ -33,9 +35,13 @@ public:
     virtual void httpHtml(ESP8266WebServer *server);
     virtual String httpGetStatus(ESP8266WebServer *server);
 
+#ifndef DISABLE_MQTT
     virtual void mqttCallback(String topicStr, String str);
     virtual void mqttConnected();
+#ifndef DISABLE_MQTT_DISCOVERY
     virtual void mqttDiscovery(bool isEnable = true);
+#endif
+#endif
 };
 
 extern Module *module;

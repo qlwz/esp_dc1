@@ -71,7 +71,7 @@ String Rtc::timeSince(uint32_t const start)
         diff = now - start;
     else
         diff = UINT32_MAX - start + now;
-    return msToHumanString(diff) + " ago";
+    return msToHumanString(diff) + F(" ago");
 }
 
 void Rtc::breakTime(uint32_t time_input, TIME_T &tm)
@@ -183,6 +183,7 @@ void Rtc::perSecondDo()
 
 void Rtc::init()
 {
+    sntp_stop();
     if (globalConfig.wifi.ntp[0] != '\0')
     {
         Debug::AddInfo(PSTR("NTP Server: %s"), globalConfig.wifi.ntp);
@@ -195,7 +196,6 @@ void Rtc::init()
         sntp_setservername(1, (char *)"203.107.6.88");
         sntp_setservername(2, (char *)"ntp3.aliyun.com");
     }
-    sntp_stop();
     sntp_set_timezone(8);
     sntp_init();
     utcTime = 0;

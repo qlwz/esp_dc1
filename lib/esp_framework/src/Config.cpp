@@ -1,4 +1,5 @@
-#include <EEPROM.h>
+#include <c_types.h>
+#include <spi_flash.h>
 #include "Module.h"
 
 Module *module;
@@ -16,6 +17,9 @@ const uint16_t crcTalbe[] = {
     0x0000, 0xCC01, 0xD801, 0x1400, 0xF001, 0x3C00, 0x2800, 0xE401,
     0xA001, 0x6C00, 0x7800, 0xB401, 0x5000, 0x9C01, 0x8801, 0x4400};
 
+extern uint32_t _EEPROM_start; //See EEPROM.cpp
+#define EEPROM_PHYS_ADDR ((uint32_t)(&_EEPROM_start) - 0x40200000)
+
 /**
  * 计算Crc16
  */
@@ -24,9 +28,8 @@ uint16_t Config::crc16(uint8_t *ptr, uint16_t len)
     uint16_t crc = 0xffff;
     for (uint16_t i = 0; i < len; i++)
     {
-        const uint8_t ch = *ptr++;
-        crc = crcTalbe[(ch ^ crc) & 15] ^ (crc >> 4);
-        crc = crcTalbe[((ch >> 4) ^ crc) & 15] ^ (crc >> 4);
+        crc = crcTalbe[(ptr[i] ^ crc) & 15] ^ (crc >> 4);
+        crc = crcTalbe[((ptr[i] >> 4) ^ crc) & 15] ^ (crc >> 4);
     }
     return crc;
 }
@@ -75,37 +78,45 @@ void Config::resetConfig()
 
 void Config::readConfig()
 {
+    uint8_t buf[6] = {0};
+    if (spi_flash_read(EEPROM_PHYS_ADDR, (uint32 *)buf, 6) != SPI_FLASH_RESULT_OK)
+    {
+    }
+
     uint16 len;
     bool status = false;
-    uint16 cfg = (EEPROM.read(0) << 8 | EEPROM.read(1));
+    uint16 cfg = (buf[0] << 8 | buf[1]);
     if (cfg == GLOBAL_CFG_VERSION)
     {
-        len = (EEPROM.read(2) << 8 | EEPROM.read(3));
-        nowCrc = (EEPROM.read(4) << 8 | EEPROM.read(5));
+        len = (buf[2] << 8 | buf[3]);
+        nowCrc = (buf[4] << 8 | buf[5]);
 
         if (len > GlobalConfigMessage_size)
         {
             len = GlobalConfigMessage_size;
         }
+        //Debug::AddInfo(PSTR("readConfig . . . Len: %d Crc: %d"), len, nowCrc);
 
-        uint16_t crc = 0xffff;
-        uint8_t buffer[GlobalConfigMessage_size];
-        for (uint16_t i = 0; i < len; ++i)
+        uint8_t *data = (uint8_t *)malloc(len);
+        if (spi_flash_read(EEPROM_PHYS_ADDR + 6, (uint32 *)data, len) == SPI_FLASH_RESULT_OK)
         {
-            buffer[i] = EEPROM.read(i + 6);
-            crc = crcTalbe[(buffer[i] ^ crc) & 15] ^ (crc >> 4);
-            crc = crcTalbe[((buffer[i] >> 4) ^ crc) & 15] ^ (crc >> 4);
-        }
-        if (crc == nowCrc)
-        {
-            memset(&globalConfig, 0, sizeof(GlobalConfigMessage));
-            pb_istream_t stream = pb_istream_from_buffer(buffer, len);
-            status = pb_decode(&stream, GlobalConfigMessage_fields, &globalConfig);
-            if (globalConfig.http.port == 0)
+            uint16_t crc = crc16(data, len);
+            if (crc == nowCrc)
             {
-                globalConfig.http.port = 80;
+                memset(&globalConfig, 0, sizeof(GlobalConfigMessage));
+                pb_istream_t stream = pb_istream_from_buffer(data, len);
+                status = pb_decode(&stream, GlobalConfigMessage_fields, &globalConfig);
+                if (globalConfig.http.port == 0)
+                {
+                    globalConfig.http.port = 80;
+                }
+            }
+            else
+            {
+                Debug::AddError(PSTR("readConfig . . . Error Crc: %d Crc: %d"), crc, nowCrc);
             }
         }
+        free(data);
     }
 
     if (!status)
@@ -154,22 +165,34 @@ bool Config::saveConfig(bool isEverySecond)
         }
     }
 
-    EEPROM.write(0, GLOBAL_CFG_VERSION >> 8);
-    EEPROM.write(1, GLOBAL_CFG_VERSION);
-
-    EEPROM.write(2, len >> 8);
-    EEPROM.write(3, len);
-
-    EEPROM.write(4, nowCrc >> 8);
-    EEPROM.write(5, nowCrc);
-
-    for (uint16_t i = 0; i < len; i++)
+    uint8_t *data = (uint8_t *)malloc(len + 6);
+    if (spi_flash_erase_sector(EEPROM_PHYS_ADDR / SPI_FLASH_SEC_SIZE) != SPI_FLASH_RESULT_OK)
     {
-        EEPROM.write(i + 6, buffer[i]);
+        free(data);
+        Debug::AddError(PSTR("saveConfig . . . Erase Sector Error"));
+        return false;
     }
-    EEPROM.commit();
 
-    Debug::AddInfo(PSTR("saveConfig . . . OK Len: %d"), len);
+    data[0] = GLOBAL_CFG_VERSION >> 8;
+    data[1] = GLOBAL_CFG_VERSION;
+
+    data[2] = len >> 8;
+    data[3] = len;
+
+    data[4] = nowCrc >> 8;
+    data[5] = nowCrc;
+
+    memcpy(&data[6], buffer, len);
+
+    if (spi_flash_write(EEPROM_PHYS_ADDR, (uint32 *)data, len + 6) != SPI_FLASH_RESULT_OK)
+    {
+        free(data);
+        Debug::AddError(PSTR("saveConfig . . . Write Data Error"));
+        return false;
+    }
+    free(data);
+
+    Debug::AddInfo(PSTR("saveConfig . . . OK Len: %d Crc: %d"), len, nowCrc);
     return true;
 }
 
