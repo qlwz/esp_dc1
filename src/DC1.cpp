@@ -30,7 +30,7 @@ void DC1::init()
     logoLed();
 
     strcpy(powerStatTopic, Mqtt::getStatTopic(F("power1")).c_str());
-    strcpy(energyTeleTopic, Mqtt::getTeleTopic("energy").c_str());
+    strcpy(energyTeleTopic, Mqtt::getTeleTopic(F("energy")).c_str());
 
     channels = 4;
     for (uint8_t ch = 0; ch < channels; ch++)
@@ -183,12 +183,21 @@ void DC1::mqttDiscovery(bool isEnable)
     strcpy(cmndTopic, Mqtt::getCmndTopic(F("power1")).c_str());
     for (size_t ch = 0; ch < channels; ch++)
     {
-        sprintf(topic, "%s/switch/%s_%d/config", globalConfig.mqtt.discovery_prefix, UID, (ch + 1));
+        sprintf(topic, PSTR("%s/switch/%s_%d/config"), globalConfig.mqtt.discovery_prefix, UID, (ch + 1));
         if (isEnable)
         {
             cmndTopic[strlen(cmndTopic) - 1] = ch + 49;           // 48 + 1 + ch
             powerStatTopic[strlen(powerStatTopic) - 1] = ch + 49; // 48 + 1 + ch
-            sprintf(message, HASS_DISCOVER_DC1_SWICH, UID, (ch + 1),
+            sprintf(message,
+                    PSTR("{\"name\":\"%s_%d\","
+                         "\"cmd_t\":\"%s\","
+                         "\"stat_t\":\"%s\","
+                         "\"pl_off\":\"OFF\","
+                         "\"pl_on\":\"ON\","
+                         "\"avty_t\":\"%s\","
+                         "\"pl_avail\":\"online\","
+                         "\"pl_not_avail\":\"offline\"}"),
+                    UID, (ch + 1),
                     cmndTopic,
                     powerStatTopic,
                     availability.c_str());
@@ -201,28 +210,30 @@ void DC1::mqttDiscovery(bool isEnable)
         }
     }
 
-    String tims[] = {"voltage", "current", "power", "apparent_power", "reactive_power", "factor", "total", "yesterday", "today", "starttime"};
-    String tims2[] = {"V", "A", "W", "VA", "VAr", "", "kWh", "kWh", "kWh", ""};
+    String tims[] = {F("voltage"), F("current"), F("power"), F("apparent_power"), F("reactive_power"), F("factor"), F("total"), F("yesterday"), F("today"), F("starttime")};
+    String tims2[] = {F("V"), F("A"), F("W"), F("VA"), F("VAr"), F(""), F("kWh"), F("kWh"), F("kWh"), F("")};
     String energy = Mqtt::getTeleTopic(F("energy"));
     for (size_t i = 0; i < 10; i++)
     {
-        sprintf(topic, "%s/sensor/%s_%s/config", globalConfig.mqtt.discovery_prefix, UID, tims[i].c_str());
+        sprintf(topic, PSTR("%s/sensor/%s_%s/config"), globalConfig.mqtt.discovery_prefix, UID, tims[i].c_str());
         if (isEnable)
         {
             if (tims2[i].length() == 0)
             {
-                sprintf(message, HASS_DISCOVER_DC1_SENSOR_WITHOUT_UNIT,
-                        UID, tims[i].c_str(),
-                        energy.c_str(),
-                        tims[i].c_str());
+                sprintf(message,
+                        PSTR("{\"name\":\"%s_%s\","
+                             "\"stat_t\":\"%s\","
+                             "\"val_tpl\":\"{{value_json.%s}}\"}"),
+                        UID, tims[i].c_str(), energy.c_str(), tims[i].c_str());
             }
             else
             {
-                sprintf(message, HASS_DISCOVER_DC1_SENSOR,
-                        UID, tims[i].c_str(),
-                        energy.c_str(),
-                        tims[i].c_str(),
-                        tims2[i].c_str());
+                sprintf(message,
+                        PSTR("{\"name\":\"%s_%s\","
+                             "\"stat_t\":\"%s\","
+                             "\"val_tpl\":\"{{value_json.%s}}\","
+                             "\"unit_of_meas\":\"%s\"}"),
+                        UID, tims[i].c_str(), energy.c_str(), tims[i].c_str(), tims2[i].c_str());
             }
             Mqtt::publish(topic, message, true);
             //Debug::AddInfo(PSTR("discovery: %s - %s"), topic, message);
@@ -265,100 +276,102 @@ String DC1::httpGetStatus(ESP8266WebServer *server)
 
 void DC1::httpHtml(ESP8266WebServer *server)
 {
-    String radioJs = F("<script type='text/javascript'>");
-    radioJs += F("function setDataSub(data,key){if(key.substr(0,5)=='power'){var t=id(key);var v=data[key];t.setAttribute('class',v==1?'btn-success':'btn-info');t.innerHTML=v==1?'开':'关';return true}return false}");
-    String page = F("<table class='gridtable'><thead><tr><th colspan='2'>开关状态</th></tr></thead><tbody>");
-    page += F("<tr colspan='2' style='text-align:center'><td>");
+    server->sendContent_P(
+        PSTR("<table class='gridtable'><thead><tr><th colspan='2'>开关状态</th></tr></thead><tbody>"
+             "<tr style='text-align:center'><td colspan='2'>"));
+
     for (size_t ch = 0; ch < channels; ch++)
     {
-        page += F(" <button type='button' style='width:50px' onclick=\"ajaxPost('/dc1_do', 'do=T&c={ch}');\" id='power{ch}' ");
-        page.replace(F("{ch}"), String(ch + 1));
-        if (bitRead(lastState, ch))
-        {
-            page += F("class='btn-success'>开</button>");
-        }
-        else
-        {
-            page += F("class='btn-info'>关</button>");
-        }
+        snprintf_P(tmpData, sizeof(tmpData),
+                   PSTR(" <button type='button' style='width:50px' onclick=\"ajaxPost('/dc1_do', 'do=T&c=%d');\" id='power%d' class='btn-%s'>%s</button>"),
+                   ch + 1, ch + 1,
+                   bitRead(lastState, ch) ? PSTR("success") : PSTR("info"),
+                   bitRead(lastState, ch) ? PSTR("开") : PSTR("关"));
+        server->sendContent_P(tmpData);
     }
-    page += F("</td></tr></tbody></table>");
 
-    page += F("<table class='gridtable'><thead><tr><th colspan='2'>电量统计</th></tr></thead><tbody>");
-    page += F("<tr colspan='2'><td><div style='width:260px;margin:0 auto;text-align:left'>");
-    page += F("&#12288;&#12288;&#12288;电压：<span id='voltage'>0</span> V");
-    page += F("<br>&#12288;&#12288;&#12288;电流：<span id='current'>0</span> A");
-    page += F("<br>&#12288;&#12288;&#12288;功率：<span id='power'>0</span> W");
-    page += F("<br>&#12288;视在功率：<span id='apparent_power'>0</span> VA");
-    page += F("<br>&#12288;无功功率：<span id='reactive_power'></span> VAr");
-    page += F("<br>&#12288;功率因数：<span id='factor'>0</span>");
-    page += F("<br>今日用电量：<span id='today'>0</span> kWh");
-    page += F("<br>昨日用电量：<span id='yesterday'>0</span> kWh");
-    page += F("<br>&#12288;总用电量：<span id='total'>0</span> kWh");
-    page += F("<br>&#12288;开始时间：<span id='starttime'>{v}</span>");
-    page += F("</div></td></tr></tbody></table>");
-    page.replace(F("{v}"), kWhtotalTime);
+    server->sendContent_P(
+        PSTR("</td></tr></tbody></table>"
 
-    page += F("<form method='post' action='/dc1_setting' onsubmit='postform(this);return false'>");
-    page += F("<table class='gridtable'><thead><tr><th colspan='2'>DC1插线板设置</th></tr></thead><tbody>");
-    page += F("<tr><td>上电状态</td><td>");
-    page += F("<label class='bui-radios-label'><input type='radio' name='power_on_state' value='0'/><i class='bui-radios'></i> 开关通电时断开</label><br/>");
-    page += F("<label class='bui-radios-label'><input type='radio' name='power_on_state' value='1'/><i class='bui-radios'></i> 开关通电时闭合</label><br/>");
-    page += F("<label class='bui-radios-label'><input type='radio' name='power_on_state' value='2'/><i class='bui-radios'></i> 开关通电时状态与断电前相反</label><br/>");
-    page += F("<label class='bui-radios-label'><input type='radio' name='power_on_state' value='3'/><i class='bui-radios'></i> 开关通电时保持断电前状态</label>");
-    page += F("</td></tr>");
-    radioJs += F("setRadioValue('power_on_state', '{v}');");
-    radioJs.replace(F("{v}"), String(config.power_on_state));
+             "<table class='gridtable'><thead><tr><th colspan='2'>电量统计</th></tr></thead><tbody>"
+             "<tr colspan='2'><td><div style='width:260px;margin:0 auto;text-align:left'>"
+             "&#12288;&#12288;&#12288;电压：<span id='voltage'>0</span> V"
+             "<br>&#12288;&#12288;&#12288;电流：<span id='current'>0</span> A"
+             "<br>&#12288;&#12288;&#12288;功率：<span id='power'>0</span> W"
+             "<br>&#12288;视在功率：<span id='apparent_power'>0</span> VA"
+             "<br>&#12288;无功功率：<span id='reactive_power'></span> VAr"
+             "<br>&#12288;功率因数：<span id='factor'>0</span>"
+             "<br>今日用电量：<span id='today'>0</span> kWh"
+             "<br>昨日用电量：<span id='yesterday'>0</span> kWh"
+             "<br>&#12288;总用电量：<span id='total'>0</span> kWh"
+             "<br>&#12288;开始时间：<span id='starttime'>--</span>"
+             "</div></td></tr></tbody></table>"));
 
-    page += F("<tr><td>开关模式</td><td>");
-    page += F("<label class='bui-radios-label'><input type='radio' name='power_mode' value='0'/><i class='bui-radios'></i> 自锁</label>&nbsp;&nbsp;&nbsp;&nbsp;");
-    page += F("<label class='bui-radios-label'><input type='radio' name='power_mode' value='1'/><i class='bui-radios'></i> 互锁</label>");
-    page += F("</td></tr>");
-    radioJs += F("setRadioValue('power_mode', '{v}');");
-    radioJs.replace(F("{v}"), String(config.power_mode));
+    server->sendContent_P(
+        PSTR("<form method='post' action='/dc1_setting' onsubmit='postform(this);return false'>"
+             "<table class='gridtable'><thead><tr><th colspan='2'>DC1插线板设置</th></tr></thead><tbody>"
+             "<tr><td>上电状态</td><td>"
+             "<label class='bui-radios-label'><input type='radio' name='power_on_state' value='0'/><i class='bui-radios'></i> 开关通电时断开</label><br/>"
+             "<label class='bui-radios-label'><input type='radio' name='power_on_state' value='1'/><i class='bui-radios'></i> 开关通电时闭合</label><br/>"
+             "<label class='bui-radios-label'><input type='radio' name='power_on_state' value='2'/><i class='bui-radios'></i> 开关通电时状态与断电前相反</label><br/>"
+             "<label class='bui-radios-label'><input type='radio' name='power_on_state' value='3'/><i class='bui-radios'></i> 开关通电时保持断电前状态</label>"
+             "</td></tr>"));
 
-    page += F("<tr><td>LOGO LED</td><td>");
-    page += F("<label class='bui-radios-label'><input type='radio' name='logo_led' value='0'/><i class='bui-radios'></i> 常亮</label>&nbsp;&nbsp;&nbsp;&nbsp;");
-    page += F("<label class='bui-radios-label'><input type='radio' name='logo_led' value='1'/><i class='bui-radios'></i> 常灭</label>&nbsp;&nbsp;&nbsp;&nbsp;");
-    page += F("<label class='bui-radios-label'><input type='radio' name='logo_led' value='2'/><i class='bui-radios'></i> 跟随总开关</label>&nbsp;&nbsp;&nbsp;&nbsp;");
-    page += F("<label class='bui-radios-label'><input type='radio' name='logo_led' value='3'/><i class='bui-radios'></i> 与总开关相反</label>");
-    page += F("</td></tr>");
-    radioJs += F("setRadioValue('logo_led', '{v}');");
-    radioJs.replace(F("{v}"), String(config.logo_led));
+    server->sendContent_P(
+        PSTR("<tr><td>开关模式</td><td>"
+             "<label class='bui-radios-label'><input type='radio' name='power_mode' value='0'/><i class='bui-radios'></i> 自锁</label>&nbsp;&nbsp;&nbsp;&nbsp;"
+             "<label class='bui-radios-label'><input type='radio' name='power_mode' value='1'/><i class='bui-radios'></i> 互锁</label>"
+             "</td></tr>"));
 
-    page += F("<tr><td>WIFI LED</td><td>");
-    page += F("<label class='bui-radios-label'><input type='radio' name='wifi_led' value='0'/><i class='bui-radios'></i> 常亮</label>&nbsp;&nbsp;&nbsp;&nbsp;");
-    page += F("<label class='bui-radios-label'><input type='radio' name='wifi_led' value='1'/><i class='bui-radios'></i> 常灭</label>&nbsp;&nbsp;&nbsp;&nbsp;");
-    page += F("<label class='bui-radios-label'><input type='radio' name='wifi_led' value='2'/><i class='bui-radios'></i> 闪烁</label><br>未连接WIFI或者MQTT时为快闪");
-    page += F("</td></tr>");
-    radioJs += F("setRadioValue('wifi_led', '{v}');");
-    radioJs.replace(F("{v}"), String(config.wifi_led));
+    server->sendContent_P(
+        PSTR("<tr><td>LOGO LED</td><td>"
+             "<label class='bui-radios-label'><input type='radio' name='logo_led' value='0'/><i class='bui-radios'></i> 常亮</label>&nbsp;&nbsp;&nbsp;&nbsp;"
+             "<label class='bui-radios-label'><input type='radio' name='logo_led' value='1'/><i class='bui-radios'></i> 常灭</label>&nbsp;&nbsp;&nbsp;&nbsp;"
+             "<label class='bui-radios-label'><input type='radio' name='logo_led' value='2'/><i class='bui-radios'></i> 跟随总开关</label>&nbsp;&nbsp;&nbsp;&nbsp;"
+             "<label class='bui-radios-label'><input type='radio' name='logo_led' value='3'/><i class='bui-radios'></i> 与总开关相反</label>"
+             "</td></tr>"));
 
-    page += F("<tr><td>分开关联动</td><td>");
-    page += F("<label class='bui-radios-label'><input type='radio' name='sub_kinkage' value='0'/><i class='bui-radios'></i> 不联动</label>&nbsp;&nbsp;&nbsp;&nbsp;");
-    page += F("<label class='bui-radios-label'><input type='radio' name='sub_kinkage' value='1'/><i class='bui-radios'></i> 总关禁开</label>&nbsp;&nbsp;&nbsp;&nbsp;");
-    page += F("<label class='bui-radios-label'><input type='radio' name='sub_kinkage' value='2'/><i class='bui-radios'></i> 分开总开</label>");
-    page += F("</td></tr>");
-    radioJs += F("setRadioValue('sub_kinkage', '{v}');");
-    radioJs.replace(F("{v}"), String(config.sub_kinkage));
+    server->sendContent_P(
+        PSTR("<tr><td>WIFI LED</td><td>"
+             "<label class='bui-radios-label'><input type='radio' name='wifi_led' value='0'/><i class='bui-radios'></i> 常亮</label>&nbsp;&nbsp;&nbsp;&nbsp;"
+             "<label class='bui-radios-label'><input type='radio' name='wifi_led' value='1'/><i class='bui-radios'></i> 常灭</label>&nbsp;&nbsp;&nbsp;&nbsp;"
+             "<label class='bui-radios-label'><input type='radio' name='wifi_led' value='2'/><i class='bui-radios'></i> 闪烁</label><br>未连接WIFI或者MQTT时为快闪"
+             "</td></tr>"));
 
-    page += F("<tr><td>主动上报间隔</td><td><input type='number' min='0' max='3600' name='report_interval' required value='{v}'>&nbsp;秒，0关闭</td></tr>");
-    page.replace(F("{v}"), String(config.report_interval));
+    server->sendContent_P(
+        PSTR("<tr><td>分开关联动</td><td>"
+             "<label class='bui-radios-label'><input type='radio' name='sub_kinkage' value='0'/><i class='bui-radios'></i> 不联动</label>&nbsp;&nbsp;&nbsp;&nbsp;"
+             "<label class='bui-radios-label'><input type='radio' name='sub_kinkage' value='1'/><i class='bui-radios'></i> 总关禁开</label>&nbsp;&nbsp;&nbsp;&nbsp;"
+             "<label class='bui-radios-label'><input type='radio' name='sub_kinkage' value='2'/><i class='bui-radios'></i> 分开总开</label>"
+             "</td></tr>"));
 
-    page += F("<tr><td>功率波动</td><td><input type='number' min='0' max='4000' name='energy_power_delta' required value='{v}'>&nbsp;0关闭，1-100为%，>100是差值(-100)</td></tr>");
-    page.replace(F("{v}"), String(config.energy_power_delta));
+    snprintf_P(tmpData, sizeof(tmpData),
+               PSTR("<tr><td>主动上报间隔</td><td><input type='number' min='0' max='3600' name='report_interval' required value='%d'>&nbsp;秒，0关闭</td></tr>"
+                    "<tr><td>功率波动</td><td><input type='number' min='0' max='4000' name='energy_power_delta' required value='%d'>&nbsp;0关闭，1-100为百分比，>100是差值(-100)</td></tr>"
+                    "<tr><td>过载保护</td><td><input type='number' min='0' max='2600' name='energy_max_power' required value='%d'>&nbsp;W&nbsp;&nbsp;&nbsp;&nbsp;0关闭</td></tr>"),
+               config.report_interval, config.energy_power_delta, config.energy_max_power);
+    server->sendContent_P(tmpData);
 
-    page += F("<tr><td>过载保护</td><td><input type='number' min='0' max='2600' name='energy_max_power' required value='{v}'>&nbsp;W&nbsp;&nbsp;&nbsp;&nbsp;0关闭</td></tr>");
-    page.replace(F("{v}"), String(config.energy_max_power));
+    server->sendContent_P(
+        PSTR("<tr><td colspan='2'><button type='submit' class='btn-info'>设置</button><br>"
+             "<button type='button' class='btn-success' style='margin-top:10px' onclick='window.location.href=\"/ha\"'>下载HA配置文件</button><br>"
+             "<button type='button' class='btn-danger' style='margin-top:10px' onclick=\"javascript:if(confirm('确定要重置用电量？')){ajaxPost('/dc1_setting', 'c=1');}\">重置用电量</button></td></tr>"
+             "</tbody></table></form>"));
 
-    page += F("<tr><td colspan='2'><button type='submit' class='btn-info'>设置</button><br>");
-    page += F("<button type='button' class='btn-success' style='margin-top:10px' onclick='window.location.href=\"/ha\"'>下载HA配置文件</button><br>");
-    page += F("<button type='button' class='btn-danger' style='margin-top:10px' onclick=\"javascript:if(confirm('确定要重置用电量？')){ajaxPost('/dc1_setting', 'c=1');}\">重置用电量</button></td></tr>");
-    page += F("</tbody></table></form>");
-    radioJs += F("</script>");
+    server->sendContent_P(
+        PSTR("<script type='text/javascript'>"
+             "function setDataSub(data,key){if(key.substr(0,5)=='power' && key.length==6){var t=id(key);var v=data[key];t.setAttribute('class',v==1?'btn-success':'btn-info');t.innerHTML=v==1?'开':'关';return true}return false}"));
 
-    server->sendContent(page);
-    server->sendContent(radioJs);
+    snprintf_P(tmpData, sizeof(tmpData),
+               PSTR("setRadioValue('power_on_state', '%d');"
+                    "setRadioValue('power_mode', '%d');"
+                    "setRadioValue('logo_led', '%d');"
+                    "setRadioValue('wifi_led', '%d');"
+                    "setRadioValue('sub_kinkage', '%d');"),
+               config.power_on_state, config.power_mode, config.logo_led, config.wifi_led, config.sub_kinkage);
+    server->sendContent_P(tmpData);
+
+    server->sendContent_P(PSTR("</script>"));
 }
 
 void DC1::httpDo(ESP8266WebServer *server)
@@ -366,19 +379,22 @@ void DC1::httpDo(ESP8266WebServer *server)
     String c = server->arg(F("c"));
     if (c != F("1") && c != F("2") && c != F("3") && c != F("4"))
     {
-        server->send(200, F("text/html"), F("{\"code\":0,\"msg\":\"参数错误。\"}"));
+        server->send_P(200, PSTR("application/json"), PSTR("{\"code\":0,\"msg\":\"参数错误。\"}"));
         return;
     }
     uint8_t ch = c.toInt() - 1;
     if (ch > channels)
     {
-        server->send(200, F("text/html"), F("{\"code\":0,\"msg\":\"继电器数量错误。\"}"));
+        server->send_P(200, PSTR("application/json"), PSTR("{\"code\":0,\"msg\":\"继电器数量错误。\"}"));
         return;
     }
     String str = server->arg(F("do"));
     switchRelay(ch, (str == "on" ? true : (str == "off" ? false : !bitRead(lastState, ch))));
 
-    server->send(200, F("text/html"), "{\"code\":1,\"msg\":\"操作成功\",\"data\":{" + httpGetStatus(server) + "}}");
+    server->setContentLength(CONTENT_LENGTH_UNKNOWN);
+    server->send_P(200, PSTR("application/json"), PSTR("{\"code\":1,\"msg\":\"操作成功\",\"data\":{"));
+    server->sendContent(httpGetStatus(server));
+    server->sendContent_P(PSTR("}}"));
 }
 
 void DC1::httpSetting(ESP8266WebServer *server)
@@ -386,7 +402,10 @@ void DC1::httpSetting(ESP8266WebServer *server)
     if (server->hasArg(F("c")))
     {
         energyClear();
-        server->send(200, F("text/html"), "{\"code\":1,\"msg\":\"重置用电量成功。\",\"data\":{" + httpGetStatus(server) + "}}");
+        server->setContentLength(CONTENT_LENGTH_UNKNOWN);
+        server->send_P(200, PSTR("application/json"), PSTR("{\"code\":1,\"msg\":\"重置用电量成功。\",\"data\":{"));
+        server->sendContent(httpGetStatus(server));
+        server->sendContent_P(PSTR("}}"));
         return;
     }
     config.power_on_state = server->arg(F("power_on_state")).toInt();
@@ -402,7 +421,7 @@ void DC1::httpSetting(ESP8266WebServer *server)
     logoLed();
 
     Config::saveConfig();
-    server->send(200, F("text/html"), F("{\"code\":1,\"msg\":\"已经设置成功。\"}"));
+    server->send_P(200, PSTR("application/json"), PSTR("{\"code\":1,\"msg\":\"已经设置成功。\"}"));
 }
 
 void DC1::httpHa(ESP8266WebServer *server)
@@ -412,7 +431,7 @@ void DC1::httpHa(ESP8266WebServer *server)
 
     server->setContentLength(CONTENT_LENGTH_UNKNOWN);
     server->sendHeader(F("Content-Disposition"), attachment);
-    server->send(200, F("Content-Type: application/octet-stream"), "");
+    server->send_P(200, PSTR("Content-Type: application/octet-stream"), "");
 
     String availability = Mqtt::getTeleTopic(F("availability"));
     char cmndTopic[100];
@@ -422,40 +441,46 @@ void DC1::httpHa(ESP8266WebServer *server)
     {
         cmndTopic[strlen(cmndTopic) - 1] = ch + 49;           // 48 + 1 + ch
         powerStatTopic[strlen(powerStatTopic) - 1] = ch + 49; // 48 + 1 + ch
-        server->sendContent(F("  - platform: mqtt\r\n    name: \""));
-        server->sendContent(UID);
-        server->sendContent(F("_"));
-        server->sendContent(String((ch + 1)));
-        server->sendContent(F("\"\r\n    state_topic: \""));
-        server->sendContent(powerStatTopic);
-        server->sendContent(F("\"\r\n    command_topic: \""));
-        server->sendContent(cmndTopic);
-        server->sendContent(F("\"\r\n    payload_on: \"on\"\r\n    payload_off: \"off\"\r\n    availability_topic: \""));
-        server->sendContent(availability);
-        server->sendContent(F("\"\r\n    payload_available: \"online\"\r\n    payload_not_available: \"offline\"\r\n\r\n"));
+
+        snprintf_P(tmpData, sizeof(tmpData),
+                   PSTR("  - platform: mqtt\r\n"
+                        "    name: \"%s_%d\"\r\n"
+                        "    state_topic: \"%s\"\r\n"
+                        "    command_topic: \"%s\"\r\n"
+                        "    payload_on: \"on\"\r\n"
+                        "    payload_off: \"off\"\r\n"
+                        "    availability_topic: \"%s\"\r\n"
+                        "    payload_available: \"online\"\r\n"
+                        "    payload_not_available: \"offline\"\r\n\r\n"),
+                   UID, ch + 1, powerStatTopic, cmndTopic, availability.c_str());
+        server->sendContent_P(tmpData);
     }
 
-    String energy = Mqtt::getTeleTopic(F("energy"));
-    String tims[] = {"voltage", "current", "power", "apparent_power", "reactive_power", "factor", "total", "yesterday", "today", "starttime"};
-    String tims2[] = {"V", "A", "W", "VA", "VAr", "", "kWh", "kWh", "kWh", ""};
-    server->sendContent(F("sensor:\r\n"));
+    String tims[] = {F("voltage"), F("current"), F("power"), F("apparent_power"), F("reactive_power"), F("factor"), F("total"), F("yesterday"), F("today"), F("starttime")};
+    String tims2[] = {F("V"), F("A"), F("W"), F("VA"), F("VAr"), F(""), F("kWh"), F("kWh"), F("kWh"), F("")};
+    server->sendContent_P(PSTR("sensor:\r\n"));
     for (size_t i = 0; i < 10; i++)
     {
-        server->sendContent(F("  - platform: mqtt\r\n    name: \""));
-        server->sendContent(UID);
-        server->sendContent(F("_"));
-        server->sendContent(tims[i]);
-        server->sendContent(F("\"\r\n    state_topic: \""));
-        server->sendContent(energy);
-        server->sendContent(F("\"\r\n    value_template: \"{{value_json."));
-        server->sendContent(tims[i]);
-        server->sendContent(F("}}"));
-        if (tims2[i].length() > 0)
+        if (tims2[i].length() == 0)
         {
-            server->sendContent(F("\"\r\n    unit_of_measurement: \""));
-            server->sendContent(tims2[i]);
+            snprintf_P(tmpData, sizeof(tmpData),
+                       PSTR("  - platform: mqtt\r\n"
+                            "    name: \"%s_%s\"\r\n"
+                            "    state_topic: \"%s\"\r\n"
+                            "    value_template: \"{{value_json.%s}}\"\r\n\r\n"),
+                       UID, tims[i].c_str(), energyTeleTopic, tims[i].c_str());
         }
-        server->sendContent(F("\"\r\n\r\n"));
+        else
+        {
+            snprintf_P(tmpData, sizeof(tmpData),
+                       PSTR("  - platform: mqtt\r\n"
+                            "    name: \"%s_%s\"\r\n"
+                            "    state_topic: \"%s\"\r\n"
+                            "    value_template: \"{{value_json.%s}}\"\r\n"
+                            "    unit_of_measurement: \"%s\"\r\n\r\n"),
+                       UID, tims[i].c_str(), energyTeleTopic, tims[i].c_str(), tims2[i].c_str());
+        }
+        server->sendContent_P(tmpData);
     }
 }
 #pragma endregion
@@ -615,7 +640,7 @@ void DC1::energyUpdate()
     }
     if (Rtc::rtcTime.valid && config.energy_kWhdoy != Rtc::rtcTime.day_of_year)
     {
-        Debug::AddInfo("day_of_year: %d %d %d", Rtc::rtcTime.day_of_year, Rtc::rtcTime.day_of_month, Rtc::rtcTime.day_of_week);
+        Debug::AddInfo(PSTR("day_of_year: %d %d %d"), Rtc::rtcTime.day_of_year, Rtc::rtcTime.day_of_month, Rtc::rtcTime.day_of_week);
 
         energySync();
         config.energy_kWhdoy = Rtc::rtcTime.day_of_year;
@@ -890,15 +915,16 @@ void DC1::energyShow(bool isMqtt)
     Util::dtostrfd((float)config.energy_kWhyesterday / 100000, energy_resolution, energy_yesterday_chr);
     Util::dtostrfd(cse7766->Energy.total, energy_resolution, energy_total_chr);
 
-    sprintf(tmpData, "%s\"starttime\":\"%s\",\"total\":\"%s\",\"yesterday\":\"%s\",\"today\":\"%s\","
-                     "\"voltage\":\"%s\",\"current\":\"%s\",\"power\":\"%s\","
-                     "\"apparent_power\":\"%s\",\"reactive_power\":\"%s\",\"factor\":\"%s\"%s",
-            isMqtt ? "{" : ",",
-            kWhtotalTime,
-            energy_total_chr, energy_yesterday_chr, energy_daily_chr,
-            voltage_chr, current_chr, active_power_chr,
-            apparent_power_chr, reactive_power_chr, power_factor_chr,
-            isMqtt ? "}" : "");
+    snprintf_P(tmpData, sizeof(tmpData),
+               PSTR("%s\"starttime\":\"%s\",\"total\":\"%s\",\"yesterday\":\"%s\",\"today\":\"%s\","
+                    "\"voltage\":\"%s\",\"current\":\"%s\",\"power\":\"%s\","
+                    "\"apparent_power\":\"%s\",\"reactive_power\":\"%s\",\"factor\":\"%s\"%s"),
+               isMqtt ? PSTR("{") : PSTR(","),
+               kWhtotalTime,
+               energy_total_chr, energy_yesterday_chr, energy_daily_chr,
+               voltage_chr, current_chr, active_power_chr,
+               apparent_power_chr, reactive_power_chr, power_factor_chr,
+               isMqtt ? PSTR("}") : PSTR(""));
 }
 
 void DC1::reportEnergy()
