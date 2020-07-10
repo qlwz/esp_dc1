@@ -165,14 +165,16 @@ bool Config::saveConfig(bool isEverySecond)
         }
     }
 
-    uint8_t *data = (uint8_t *)malloc(len + 6);
-    if (spi_flash_erase_sector(EEPROM_PHYS_ADDR / SPI_FLASH_SEC_SIZE) != SPI_FLASH_RESULT_OK)
+    // 读取原来数据
+    uint8_t *data = (uint8_t *)malloc(SPI_FLASH_SEC_SIZE);
+    if (spi_flash_read(EEPROM_PHYS_ADDR, (uint32 *)data, SPI_FLASH_SEC_SIZE) != SPI_FLASH_RESULT_OK)
     {
         free(data);
-        Debug::AddError(PSTR("saveConfig . . . Erase Sector Error"));
+        Debug::AddError(PSTR("saveConfig . . . Read EEPROM Data Error"));
         return false;
     }
 
+    // 拷贝数据
     data[0] = GLOBAL_CFG_VERSION >> 8;
     data[1] = GLOBAL_CFG_VERSION;
 
@@ -184,10 +186,19 @@ bool Config::saveConfig(bool isEverySecond)
 
     memcpy(&data[6], buffer, len);
 
-    if (spi_flash_write(EEPROM_PHYS_ADDR, (uint32 *)data, len + 6) != SPI_FLASH_RESULT_OK)
+    // 擦写扇区
+    if (spi_flash_erase_sector(EEPROM_PHYS_ADDR / SPI_FLASH_SEC_SIZE) != SPI_FLASH_RESULT_OK)
     {
         free(data);
-        Debug::AddError(PSTR("saveConfig . . . Write Data Error"));
+        Debug::AddError(PSTR("saveConfig . . . Erase Sector Error"));
+        return false;
+    }
+
+    // 写入数据
+    if (spi_flash_write(EEPROM_PHYS_ADDR, (uint32 *)data, SPI_FLASH_SEC_SIZE) != SPI_FLASH_RESULT_OK)
+    {
+        free(data);
+        Debug::AddError(PSTR("saveConfig . . . Write EEPROM Data Error"));
         return false;
     }
     free(data);

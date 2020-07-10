@@ -2,6 +2,9 @@
 #include "DC1.h"
 #include "Rtc.h"
 #include "Util.h"
+#ifdef USE_HOMEKIT
+#include "HomeKit.h"
+#endif
 
 #pragma region 继承
 
@@ -259,6 +262,9 @@ void DC1::httpAdd(ESP8266WebServer *server)
     server->on(F("/dc1_do"), std::bind(&DC1::httpDo, this, server));
     server->on(F("/dc1_setting"), std::bind(&DC1::httpSetting, this, server));
     server->on(F("/ha"), std::bind(&DC1::httpHa, this, server));
+#ifdef USE_HOMEKIT
+    server->on(F("/homekit"), std::bind(&homekit_http, server));
+#endif
 }
 
 String DC1::httpGetStatus(ESP8266WebServer *server)
@@ -357,6 +363,10 @@ void DC1::httpHtml(ESP8266WebServer *server)
              "<button type='button' class='btn-success' style='margin-top:10px' onclick='window.location.href=\"/ha\"'>下载HA配置文件</button><br>"
              "<button type='button' class='btn-danger' style='margin-top:10px' onclick=\"javascript:if(confirm('确定要重置用电量？')){ajaxPost('/dc1_setting', 'c=1');}\">重置用电量</button></td></tr>"
              "</tbody></table></form>"));
+
+#ifdef USE_HOMEKIT
+    homekit_html(server);
+#endif
 
     server->sendContent_P(
         PSTR("<script type='text/javascript'>"
