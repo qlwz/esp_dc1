@@ -195,8 +195,8 @@ void DC1::mqttDiscovery(bool isEnable)
                     PSTR("{\"name\":\"%s_%d\","
                          "\"cmd_t\":\"%s\","
                          "\"stat_t\":\"%s\","
-                         "\"pl_off\":\"OFF\","
-                         "\"pl_on\":\"ON\","
+                         "\"pl_off\":\"off\","
+                         "\"pl_on\":\"on\","
                          "\"avty_t\":\"%s\","
                          "\"pl_avail\":\"online\","
                          "\"pl_not_avail\":\"offline\"}"),
