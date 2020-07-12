@@ -12,5 +12,6 @@ public:
     static char *dtostrfd(double number, unsigned char prec, char *s);
     static uint32_t SqrtInt(uint32_t num);
     static uint32_t RoundSqrtInt(uint32_t num);
+    static bool endWith(char *str, const char *suffix, uint16_t strLen);
 };
 #endif

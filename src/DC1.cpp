@@ -134,32 +134,25 @@ void DC1::saveConfig(bool isEverySecond)
 
 #pragma region MQTT
 
-void DC1::mqttCallback(String topicStr, String str)
+void DC1::mqttCallback(char *topic, char *payload, char *cmnd)
 {
-    if (channels >= 1 && topicStr.endsWith("/power1"))
+    if (strlen(cmnd) == 6 && strncmp(cmnd, "power", 5) == 0) // strlen("power1") = 6
     {
-        switchRelay(0, (str == "on" ? true : (str == "off" ? false : !bitRead(lastState, 0))));
+        uint8_t ch = cmnd[5] - 49;
+        if (ch < channels)
+        {
+            switchRelay(ch, (strcmp(payload, "on") == 0 ? true : (strcmp(payload, "off") == 0 ? false : !bitRead(lastState, ch))), true);
+            return;
+        }
     }
-    else if (channels >= 2 && topicStr.endsWith("/power2"))
-    {
-        switchRelay(1, (str == "on" ? true : (str == "off" ? false : !bitRead(lastState, 1))));
-    }
-    else if (channels >= 3 && topicStr.endsWith("/power3"))
-    {
-        switchRelay(2, (str == "on" ? true : (str == "off" ? false : !bitRead(lastState, 2))));
-    }
-    else if (channels >= 4 && topicStr.endsWith("/power4"))
-    {
-        switchRelay(3, (str == "on" ? true : (str == "off" ? false : !bitRead(lastState, 3))));
-    }
-    else if (topicStr.endsWith("/clear"))
-    {
-        energyClear();
-    }
-    else if (topicStr.endsWith("/report"))
+    else if (strcmp(cmnd, "report") == 0)
     {
         reportPower();
         reportEnergy();
+    }
+    else if (strcmp(cmnd, "clear") == 0)
+    {
+        energyClear();
     }
 }
 

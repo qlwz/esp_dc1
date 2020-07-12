@@ -36,7 +36,7 @@ public:
     virtual String httpGetStatus(ESP8266WebServer *server);
 
 #ifndef DISABLE_MQTT
-    virtual void mqttCallback(String topicStr, String str);
+    virtual void mqttCallback(char *topic, char *payload, char *cmnd);
     virtual void mqttConnected();
 #ifndef DISABLE_MQTT_DISCOVERY
     virtual void mqttDiscovery(bool isEnable = true);

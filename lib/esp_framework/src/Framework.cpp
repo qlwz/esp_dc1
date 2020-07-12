@@ -8,26 +8,28 @@ uint16_t Framework::rebootCount = 0;
 #ifndef DISABLE_MQTT
 void Framework::callback(char *topic, byte *payload, unsigned int length)
 {
-    String str;
-    for (int i = 0; i < length; i++)
+    Debug::AddInfo(PSTR("Subscribe: %s payload: %.*s"), topic, length, payload);
+
+    char *cmnd = strrchr(topic, '/');
+    if (cmnd == nullptr)
     {
-        str += (char)payload[i];
+        return;
     }
+    cmnd++;
+    payload[length] = 0;
 
-    Debug::AddInfo(PSTR("Subscribe: %s payload: %s"), topic, str.c_str());
-
-    String topicStr = String(topic);
-    if (topicStr.endsWith(F("/OTA")))
+    if (strcmp(cmnd, "ota") == 0)
     {
+        String str = String((char *)payload);
         Http::OTA(str.endsWith(F(".bin")) ? str : OTA_URL);
     }
-    else if (topicStr.endsWith(F("/restart")))
+    else if (strcmp(cmnd, "restart") == 0)
     {
         ESP.reset();
     }
     else if (module)
     {
-        module->mqttCallback(topicStr, str);
+        module->mqttCallback(topic, (char *)payload, cmnd);
     }
 
     Led::led(200);

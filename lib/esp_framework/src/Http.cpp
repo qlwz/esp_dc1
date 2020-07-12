@@ -340,7 +340,6 @@ void Http::handleMqtt()
     strcpy(globalConfig.mqtt.topic, topic.c_str());
     globalConfig.mqtt.interval = server->arg(F("interval")).toInt();
     Config::saveConfig();
-    Mqtt::setTopic();
 
     if (Mqtt::mqttClient.connected())
     {

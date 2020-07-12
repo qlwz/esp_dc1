@@ -89,7 +89,7 @@ public:
     void resetConfig();
     void saveConfig(bool isEverySecond);
 
-    void mqttCallback(String topicStr, String str);
+    void mqttCallback(char *topic, char *payload, char *cmnd);
     void mqttConnected();
     void mqttDiscovery(bool isEnable = true);
 

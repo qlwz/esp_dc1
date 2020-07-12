@@ -80,3 +80,13 @@ uint32_t Util::RoundSqrtInt(uint32_t num)
     }
     return s / 2;
 }
+
+bool Util::endWith(char *str, const char *suffix, uint16_t strLen)
+{
+    if (strLen == 0)
+    {
+        strLen = strlen(str);
+    }
+    size_t suffixLen = strlen(suffix);
+    return suffixLen <= strLen && strncmp(str + strLen - suffixLen, suffix, suffixLen) == 0 ? true : false;
+}

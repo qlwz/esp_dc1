@@ -4,9 +4,6 @@
 #include "Mqtt.h"
 #include "Module.h"
 
-String Mqtt::topicCmnd;
-String Mqtt::topicStat;
-String Mqtt::topicTele;
 uint8_t Mqtt::operationFlag = 0;
 PubSubClient Mqtt::mqttClient;
 uint32_t Mqtt::lastReconnectAttempt = 0;   // 最后尝试重连时间
@@ -109,25 +106,19 @@ void Mqtt::loop()
     }
 }
 
-void Mqtt::setTopic()
-{
-    topicCmnd = getTopic(0, F(""));
-    topicStat = getTopic(1, F(""));
-    topicTele = getTopic(2, F(""));
-}
-
 String Mqtt::getCmndTopic(String topic)
 {
-    return topicCmnd + topic;
+    return getTopic(0, topic);
 }
 
 String Mqtt::getStatTopic(String topic)
 {
-    return topicStat + topic;
+    return getTopic(1, topic);
 }
+
 String Mqtt::getTeleTopic(String topic)
 {
-    return topicTele + topic;
+    return getTopic(2, topic);
 }
 
 void Mqtt::mqttSetLoopCallback(MQTT_CALLBACK_SIGNATURE)
@@ -142,7 +133,6 @@ void Mqtt::mqttSetConnectedCallback(MQTT_CONNECTED_CALLBACK_SIGNATURE)
 
 PubSubClient &Mqtt::setClient(Client &client)
 {
-    setTopic();
     return mqttClient.setClient(client);
 }
 bool Mqtt::publish(String topic, const char *payload)
