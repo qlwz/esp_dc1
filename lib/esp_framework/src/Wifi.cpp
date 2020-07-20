@@ -11,7 +11,7 @@ WiFiEventHandler Wifi::STAGotIP;
 bool Wifi::isDHCP = true;
 
 unsigned long Wifi::configPortalStart = 0;
-#ifdef ConnectTimeOut
+#ifdef WIFI_CONNECT_TIMEOUT
 unsigned long Wifi::connectStart = 0;
 #endif
 bool Wifi::connect = false;
@@ -43,7 +43,7 @@ void Wifi::setupWifi()
     WiFi.hostname(UID);
     Debug::AddInfo(PSTR("Connecting to %s %s Wifi"), globalConfig.wifi.ssid, globalConfig.wifi.pass);
     STAGotIP = WiFi.onStationModeGotIP([](const WiFiEventStationModeGotIP &event) {
-#ifdef ConnectTimeOut
+#ifdef WIFI_CONNECT_TIMEOUT
         connectStart = 0;
 #endif
         Debug::AddInfo(PSTR("WiFi1 connected. SSID: %s IP address: %s"), WiFi.SSID().c_str(), WiFi.localIP().toString().c_str());
@@ -55,7 +55,7 @@ void Wifi::setupWifi()
         STADisconnected = WiFi.onStationModeDisconnected([](const WiFiEventStationModeDisconnected &event) {
             if (connectStart == 0)
             {
-                connectStart = millis() + ConnectTimeOut * 1000;
+                connectStart = millis() + WIFI_CONNECT_TIMEOUT * 1000;
             }
             Debug::AddInfo(PSTR("onStationModeDisconnected"));
             STADisconnected = NULL;
@@ -75,7 +75,7 @@ void Wifi::setupWifi()
         WiFi.config(static_ip, static_gw, static_sn);
     }
 
-#ifdef ConnectTimeOut
+#ifdef WIFI_CONNECT_TIMEOUT
     connectStart = millis();
 #endif
     WiFi.begin(globalConfig.wifi.ssid, globalConfig.wifi.pass);
@@ -133,8 +133,8 @@ void Wifi::tryConnect(String ssid, String pass)
 
 void Wifi::loop()
 {
-#ifdef ConnectTimeOut
-    if (connectStart > 0 && millis() > connectStart + (ConnectTimeOut * 1000))
+#ifdef WIFI_CONNECT_TIMEOUT
+    if (connectStart > 0 && millis() > connectStart + (WIFI_CONNECT_TIMEOUT * 1000))
     {
         connectStart = 0;
         if (!WiFi.isConnected())
@@ -183,7 +183,7 @@ void Wifi::loop()
     }
 
     // 检查是否超时
-    if (millis() > configPortalStart + (ConfigPortalTimeOut * 1000))
+    if (millis() > configPortalStart + (WIFI_PORTAL_TIMEOUT * 1000))
     {
         dnsServer->stop();
         configPortalStart = 0;
