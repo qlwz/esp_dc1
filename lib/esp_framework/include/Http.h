@@ -27,7 +27,6 @@ private:
     static void handleGetStatus();
     static void handleUpdate();
     static bool checkAuth();
-    static String updaterError;
 
 public:
     static ESP8266WebServer *server;
