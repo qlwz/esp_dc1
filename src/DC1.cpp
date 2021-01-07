@@ -62,7 +62,7 @@ void DC1::init()
 
 bool DC1::moduleLed()
 {
-    if (WiFi.status() == WL_CONNECTED && Mqtt::mqttClient.connected())
+    if (WiFi.status() == WL_CONNECTED && (globalConfig.mqtt.port ==0 || Mqtt::mqttClient.connected()))
     {
         if (config.wifi_led == 0)
         {

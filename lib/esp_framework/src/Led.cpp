@@ -45,7 +45,7 @@ void Led::loop()
         }
     }
 #ifndef DISABLE_MQTT
-    else if (!Mqtt::mqttClient.connected())
+    else if (globalConfig.mqtt.port != 0 && !Mqtt::mqttClient.connected())
     {
         if (Led::ledType != 1)
         {
