@@ -255,6 +255,7 @@ void DC1::httpAdd(ESP8266WebServer *server)
     server->on(F("/dc1_do"), std::bind(&DC1::httpDo, this, server));
     server->on(F("/dc1_setting"), std::bind(&DC1::httpSetting, this, server));
     server->on(F("/ha"), std::bind(&DC1::httpHa, this, server));
+    server->on(F("/metrics"), std::bind(&DC1::httpMetrics, this, server));
 #ifdef USE_HOMEKIT
     server->on(F("/homekit"), std::bind(&homekit_http, server));
 #endif
@@ -485,6 +486,112 @@ void DC1::httpHa(ESP8266WebServer *server)
         }
         server->sendContent_P(tmpData);
     }
+}
+
+void DC1::httpMetrics(ESP8266WebServer *server)
+{
+    server->setContentLength(CONTENT_LENGTH_UNKNOWN);
+    server->send_P(200, PSTR("text/plain"), "");
+
+    float apparent_power = cse7766->Energy.apparent_power;
+    if (isnan(apparent_power))
+    {
+        apparent_power = cse7766->Energy.voltage * cse7766->Energy.current;
+    }
+    if (apparent_power < cse7766->Energy.active_power)
+    { // Should be impossible
+        cse7766->Energy.active_power = apparent_power;
+    }
+
+    float power_factor = cse7766->Energy.power_factor;
+    if (isnan(power_factor))
+    {
+        power_factor = (cse7766->Energy.active_power && apparent_power) ? cse7766->Energy.active_power / apparent_power : 0;
+        if (power_factor > 1)
+        {
+            power_factor = 1;
+        }
+    }
+
+    float reactive_power = cse7766->Energy.reactive_power;
+    if (isnan(reactive_power))
+    {
+        reactive_power = 0;
+        uint32_t difference = ((uint32_t)(apparent_power * 100) - (uint32_t)(cse7766->Energy.active_power * 100)) / 10;
+        if ((cse7766->Energy.current > 0.005) && ((difference > 15) || (difference > (uint32_t)(apparent_power * 100 / 1000))))
+        {
+            // calculating reactive power only if current is greater than 0.005A and
+            // difference between active and apparent power is greater than 1.5W or 1%
+            reactive_power = (float)(Util::RoundSqrtInt((uint32_t)(apparent_power * apparent_power * 100) - (uint32_t)(cse7766->Energy.active_power * cse7766->Energy.active_power * 100))) / 10;
+        }
+    }
+
+    char voltage_chr[16];
+    char current_chr[16];
+    char active_power_chr[16];
+    char apparent_power_chr[16];
+    char reactive_power_chr[16];
+    char power_factor_chr[16];
+    char energy_total_chr[16];
+    Util::dtostrfd(cse7766->Energy.voltage, 0, voltage_chr);
+    Util::dtostrfd(cse7766->Energy.current, 3, current_chr);
+    Util::dtostrfd(cse7766->Energy.active_power, 0, active_power_chr);
+    Util::dtostrfd(apparent_power, 0, apparent_power_chr);
+    Util::dtostrfd(reactive_power, 0, reactive_power_chr);
+    Util::dtostrfd(power_factor, 2, power_factor_chr);
+    Util::dtostrfd(cse7766->Energy.total, 3, energy_total_chr);
+
+    snprintf_P(tmpData, sizeof(tmpData),
+                PSTR("# HELP dc1_voltage DC1 Voltage\n"
+                     "# TYPE dc1_voltage gauge\n"
+                     "dc1_voltage %s\n"
+                     "# HELP dc1_current DC1 Current\n"
+                     "# TYPE dc1_current gauge\n"
+                     "dc1_current %s\n"
+                     "# HELP dc1_power DC1 Power\n"
+                     "# TYPE dc1_power gauge\n"
+                     "dc1_power{type=\"active\"} %s\n"
+                     "dc1_power{type=\"apparent\"} %s\n"
+                     "dc1_power{type=\"reactive\"} %s\n"
+                     ),
+                voltage_chr, current_chr,
+                active_power_chr, apparent_power_chr, reactive_power_chr);
+    server->sendContent_P(tmpData);
+
+    snprintf_P(tmpData, sizeof(tmpData),
+                PSTR("# HELP dc1_power_factor DC1 Power factor\n"
+                    "# TYPE dc1_power_factor gauge\n"
+                    "dc1_power_factor %s\n"
+                    "# HELP dc1_energe DC1 Energe total\n"
+                    "# TYPE dc1_energe counter\n"
+                    "dc1_energe %s\n"
+                    "# HELP dc1_relay_state DC1 Relay state\n"
+                    "# TYPE dc1_relay_state gauge\n"
+                    ),
+                power_factor_chr, energy_total_chr);
+    server->sendContent_P(tmpData);
+
+    for (size_t ch = 0; ch < channels; ch++)
+    {
+        snprintf_P(tmpData, sizeof(tmpData),
+                PSTR("dc1_relay_state{relay=\"%d\"} %d\n"),
+                ch, bitRead(lastState, ch) ? 1 : 0);
+        server->sendContent_P(tmpData);
+    }
+
+    snprintf_P(tmpData, sizeof(tmpData),
+            PSTR("# HELP dc1_uptime DC1 Uptime in ms\n"
+                "# TYPE dc1_uptime gauge\n"
+                "dc1_uptime %d\n"
+                "# HELP dc1_free_mem DC1 Free memory in KB\n"
+                "# TYPE dc1_free_mem gauge\n"
+                "dc1_free_mem %d\n"
+                "# HELP rssi DC1 RSSI\n"
+                "# TYPE rssi gauge\n"
+                "rssi %d\n"
+                ),
+            millis(), ESP.getFreeHeap() / 1024, WiFi.RSSI() * 100);
+    server->sendContent_P(tmpData);
 }
 #pragma endregion
 
