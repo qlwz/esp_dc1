@@ -658,7 +658,7 @@ void DC1::energyUpdate()
     {
         energyUpdateToday();
     }
-    if (perSecond % 301 == 0 && cse7766->Energy.kWhtoday > 0)
+    if (perSecond % 3600 == 0 && cse7766->Energy.kWhtoday > 0)
     {
         energySync();
         Config::saveConfig();
