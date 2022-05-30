@@ -63,6 +63,7 @@ private:
     void httpDo(ESP8266WebServer *server);
     void httpSetting(ESP8266WebServer *server);
     void httpHa(ESP8266WebServer *server);
+    void httpMetrics(ESP8266WebServer *server);
 
     void logoLed();
 
