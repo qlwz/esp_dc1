@@ -1,3 +1,34 @@
+# ha-discovery 补丁说明
+
+本 fork 在上游基础上新增 `ha-discovery` 分支，修复 MQTT 自动发现的设计缺陷：
+
+## 问题
+
+`src/DC1.cpp` 的 `mqttDiscovery()` 在每次设备开机/重启时发布**精简版** discovery payload（只有 `name`/`cmd_t`/`stat_t`，无 `uniq_id`/`obj_id`/`dev`）。在 Home Assistant 中的后果：
+
+- 实体不进注册表，无法按设备聚合、无法自定义 entity_id
+- 设备重启后 retained 覆盖配置，已有实体失配变 `unavailable`，并出现一套重复实体
+
+## 补丁内容
+
+- 4 路开关 + 10 个传感器的 payload 补全 `uniq_id`/`obj_id`/`dev`（设备名/厂商/型号）
+- 实体名改为中文：总开关 / 插孔一 / 插孔二 / 插孔三 / 电压 / 电流 / 功率 / 视在功率 / 无功功率 / 功率因数 / 总用电量 / 昨日 / 今日 / 起始时间
+- 传感器带 `dev_cla` / `stat_cla`，用电量可直接进 HA 能源面板
+
+## 使用
+
+固件 bin 可直接从 [Releases](../../releases) 下载（OTA：`curl -F "update=@<bin>" http://<插排IP>/update`），或自行编译：
+
+```bash
+git clone -b ha-discovery https://github.com/cnbb002/esp_dc1.git
+cd esp_dc1 && pip install platformio && python -m platformio run -e dc1
+```
+
+配套的 HA 守护自动化与手工修复工具见独立项目说明（本 fork 的 `patches/` 与 Release 附件）。
+
+
+---
+
 # ESP DC1
 **斐讯DC1智能排插个人固件.**
 
